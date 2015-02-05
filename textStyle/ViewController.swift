@@ -7,6 +7,14 @@
 //
 
 import UIKit
+import CoreText
+
+class MarginLabel : UILabel {
+    override func drawTextInRect(rect: CGRect) {
+        let insets = UIEdgeInsetsMake(0, 5, 0, 5)
+        super.drawTextInRect(UIEdgeInsetsInsetRect(rect, insets))
+    }
+}
 
 class ViewController: UIViewController {
 
@@ -14,12 +22,14 @@ class ViewController: UIViewController {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
         
-        var label = UILabel(frame: CGRectMake(0, 0, 200, 21))
-        label.center = CGPointMake(160, 284)
-        label.textAlignment = NSTextAlignment.Center
-        label.text = "I'am a test label"
-        self.view.addSubview(label)
+//        var label = UILabel(frame: CGRectMake(0, 0, 200, 21))
+//        label.center = CGPointMake(160, 284)
+//        label.textAlignment = NSTextAlignment.Center
+//        label.text = "I'am a test label"
+//        self.view.addSubview(label)
+
         drawText("I am a meat popsicle, no really that is precisely what I am", point: CGPointMake(CGFloat(100),CGFloat(50)))
+
     }
 
     override func didReceiveMemoryWarning() {
@@ -71,11 +81,24 @@ class ViewController: UIViewController {
         var fontBoxWidth = CGFloat(200)
         var fontBoxHeight = CGFloat(100)
         var fontSize = CGFloat(32)
+        var textColorUI = UIColor(red: 1.0, green: 0, blue: 0, alpha: 1.0)
+        var textColor   = textColorUI.CGColor
         var font = UIFont(name: fontName, size: fontSize) ?? UIFont.systemFontOfSize(fontSize)
-        let textFont = [NSFontAttributeName:font]
+        var lineSpacing = CGFloat(10)
+        var autoSize = true
+        
+        var borderWidth = CGFloat(4.0)
+        var borderColor    = UIColor(red: 0.0, green: 0.0, blue: 1.0, alpha: 1.0).CGColor
+        var backgroundColor = UIColor(red: 0.0, green: 1.0, blue: 0.0, alpha: 0.5).CGColor
+
+        let textFont = [NSFontAttributeName:font ]
         
         let fontItal = UIFont(name: "Georgia-Italic", size:  fontSize) ?? UIFont.systemFontOfSize(fontSize)
         let italFont = [NSFontAttributeName:fontItal]
+
+        let fontBold = UIFont(name: "Helvetica Bold", size:  fontSize) ?? UIFont.systemFontOfSize(fontSize)
+        let boldFont = [NSFontAttributeName:fontBold]
+        
         
         // Create a string that will be our paragraph
         let para = NSMutableAttributedString()
@@ -83,7 +106,7 @@ class ViewController: UIViewController {
         // Create locally formatted strings
         let attrString1 = NSAttributedString(string: text, attributes:textFont)
         let attrString2 = NSAttributedString(string: " attributed", attributes:italFont)
-        let attrString3 = NSAttributedString(string: " strings.", attributes:textFont)
+        let attrString3 = NSAttributedString(string: " strings.", attributes:boldFont)
         
         // Add locally formatted strings to paragraph
         para.appendAttributedString(attrString1)
@@ -92,19 +115,41 @@ class ViewController: UIViewController {
         
         // Define paragraph styling
         let paraStyle = NSMutableParagraphStyle()
-        paraStyle.firstLineHeadIndent = 15.0
-        paraStyle.paragraphSpacingBefore = 10.0
-        // https://developer.apple.com/library/mac/documentation/Cocoa/Reference/ApplicationKit/Classes/NSParagraphStyle_Class/#//apple_ref/c/tdef/NSLineBreakMode
+//        paraStyle.firstLineHeadIndent = 15.0
+//        paraStyle.paragraphSpacingBefore = 10.0
         paraStyle.lineBreakMode = NSLineBreakMode.ByWordWrapping
+        paraStyle.lineSpacing = lineSpacing
         
         // Apply paragraph styles to paragraph
         para.addAttribute(NSParagraphStyleAttributeName, value: paraStyle, range: NSRange(location: 0,length: para.length))
         
-        // Create UITextView
-        let view = UITextView(frame: CGRect(x: point.x, y: point.y, width: CGRectGetWidth(self.view.frame) - point.x, height: CGRectGetHeight(self.view.frame)-point.y))
+        
+        // next step figure out how to draw to a rectangle or UIImage and render that to the screen
+//        let textRect = CGRectMake(0, 0, fontBoxWidth, fontBoxHeight)
+//        let textFontAttributes = [
+//            NSFontAttributeName: font,
+//            NSForegroundColorAttributeName: textColor,
+//            NSParagraphStyleAttributeName: paraStyle
+//        ]
+//        
+//        text.drawInRect(textRect, withAttributes: textFontAttributes)
+        
+        let view = MarginLabel(frame: CGRect(x: point.x, y: point.y, width: CGRectGetWidth(self.view.frame) - point.x, height: CGRectGetHeight(self.view.frame)-point.y))
+        view.numberOfLines = 0
+        view.textColor = textColorUI
+        view.layer.bounds = CGRectMake(0, 0, fontBoxWidth, fontBoxHeight)
+        view.layer.cornerRadius = CGFloat(8)
+        view.layer.masksToBounds = true
+        view.layer.borderColor = borderColor
+        view.layer.borderWidth = borderWidth
+        view.layer.backgroundColor = backgroundColor
+        
         
         // Add string to UITextView
         view.attributedText = para
+        if autoSize {
+            view.sizeToFit()
+        }
         
         // Add UITextView to main view
         self.view.addSubview(view)
