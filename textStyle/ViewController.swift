@@ -288,8 +288,6 @@ class ViewController: UIViewController {
         
         // set background to 0,0,0,0
         let fullRectangle = CGRectMake(CGFloat(0),CGFloat(0),CGFloat(fullWidth),CGFloat(fullHeight))
-        CGContextAddRect(context, fullRectangle)
-        CGContextStrokePath(context)
         CGContextSetFillColorWithColor(context,UIColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 0.0).CGColor)
         CGContextFillRect(context, fullRectangle)
         
@@ -298,8 +296,8 @@ class ViewController: UIViewController {
         let bounds = CGRectMake(point.x, point.y, fontBoxWidth, fontBoxHeight)
 
 
-        CGContextAddRect(context, bounds)
-        CGContextStrokePath(context)
+//        CGContextAddRect(context, bounds)
+//        CGContextStrokePath(context)
         CGContextSetFillColorWithColor(context,backgroundColor)
         CGContextFillRect(context, bounds)
 
