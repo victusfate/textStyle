@@ -336,7 +336,10 @@ class ViewController: UIViewController {
 //        CGContextSetTextMatrix(context, CGAffineTransformMakeRotation( CGFloat(M_PI) ))
         // Create the framesetter with the attributed string.
         
-        let framesetter = CTFramesetterCreateWithAttributedString(para);
+        let framesetter = CTFramesetterCreateWithAttributedString(para)
+//        let theSize = getTextSize(framesetter)
+//        println("the size after creating framesetter \(theSize) boundingBox \(boundingBox)")
+        
         let frame = CTFramesetterCreateFrame(framesetter,CFRangeMake(0, 0), path, nil)
         
 //        var fitRange: CFRange
@@ -353,7 +356,16 @@ class ViewController: UIViewController {
         view.addSubview(imageView)
     }
     
-
+    // didn't quite work out
+    // the size after creating framesetter (170.78125, 266.0) boundingBox (0.0, 0.0, 179.671875, 257.6)
+    func getTextSize(frameSetter : CTFramesetterRef) -> CGSize {
+        // method 1
+        let maxSize = CGSizeMake(fontBoxWidth, 0)
+        let size = CTFramesetterSuggestFrameSizeWithConstraints(frameSetter, CFRangeMake(0, 0), nil, maxSize, nil)
+        return size
+    }
+    
+    
           // standardized method to compute rendered text bounding box
     //    func getTextSize(frame : CTFrameRef) -> CGSize {
     //        let framePath = CTFrameGetPath(frame)
