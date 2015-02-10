@@ -322,12 +322,13 @@ class ViewController: UIViewController {
             var midHeight = bounds.height / 2.0
             midHeight = midHeight - (boundingBox.height / 2.0)
             println("baseline middle midheight offset \(midHeight), bounds \(bounds) boundingBox \(boundingBox)")
-            
+            // - midHeight based on lower left origin
             CGPathAddRect(path, nil, CGRectMake(bounds.origin.x, bounds.origin.y - midHeight, bounds.width, bounds.height))
         }
         else {
             let bottomHeight = bounds.height - boundingBox.height
             println("baseline bottom bounds.height \(bounds.height) boundingBox.height \(boundingBox.height) bottomHeight offset \(bottomHeight)")
+            // - bottomHeight based on lower left origin
             CGPathAddRect(path, nil, CGRectMake(bounds.origin.x, bounds.origin.y - bottomHeight, bounds.width, bounds.height));
         }
 
