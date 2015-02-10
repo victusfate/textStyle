@@ -285,6 +285,15 @@ class ViewController: UIViewController {
 //        CGContextDrawImage(context, CGRect(origin: CGPointZero, size: CGSize(width: CGFloat(width), height: CGFloat(height))), image)
         
         CGContextSetTextMatrix(context, CGAffineTransformIdentity);
+        
+        // set background to 0,0,0,0
+        let fullRectangle = CGRectMake(CGFloat(0),CGFloat(0),CGFloat(fullWidth),CGFloat(fullHeight))
+        CGContextAddRect(context, fullRectangle)
+        CGContextStrokePath(context)
+        CGContextSetFillColorWithColor(context,UIColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 0.0).CGColor)
+        CGContextFillRect(context, fullRectangle)
+        
+        
         let path = CGPathCreateMutable()
         let bounds = CGRectMake(point.x, point.y, fontBoxWidth, fontBoxHeight)
 
