@@ -132,8 +132,8 @@ class ViewController: UIViewController {
         autoSizeEnabled = false
         align = "Top"
 //        baseline = "Top"
-        baseline = "Bottom"
-//        baseline = "Middle"
+//        baseline = "Bottom"
+        baseline = "Middle"
         
         borderLineWidth = CGFloat(4.0)
         borderColor    = UIColor(red: 0.0, green: 0.0, blue: 1.0, alpha: 1.0).CGColor
@@ -323,7 +323,7 @@ class ViewController: UIViewController {
             midHeight = midHeight - (boundingBox.height / 2.0)
             println("baseline middle midheight offset \(midHeight), bounds \(bounds) boundingBox \(boundingBox)")
             
-            CGPathAddRect(path, nil, CGRectMake(bounds.origin.x, bounds.origin.y + midHeight, bounds.width, bounds.height))
+            CGPathAddRect(path, nil, CGRectMake(bounds.origin.x, bounds.origin.y - midHeight, bounds.width, bounds.height))
         }
         else {
             let bottomHeight = bounds.height - boundingBox.height
