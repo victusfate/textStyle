@@ -337,16 +337,12 @@ class ViewController: UIViewController {
         // Create the framesetter with the attributed string.
         
         let framesetter = CTFramesetterCreateWithAttributedString(para)
-//        let theSize = getTextSize(framesetter)
+//        let theSize = getTextSizeFromFrameSetter(framesetter)
 //        println("the size after creating framesetter \(theSize) boundingBox \(boundingBox)")
         
         let frame = CTFramesetterCreateFrame(framesetter,CFRangeMake(0, 0), path, nil)
-        
-//        var fitRange: CFRange
-//        
-//        let textRange = CFRangeMake(0, para.length)
-//        let frameSize = CTFramesetterSuggestFrameSizeWithConstraints(framesetter, textRange, nil, bounds, &fitRange)
-        
+        let theSize = getTextSizeFromFrame(frame)
+        println("the size after creating frame \(theSize) boundingBox \(boundingBox)")
         
         CTFrameDraw(frame, context)
         
@@ -358,7 +354,7 @@ class ViewController: UIViewController {
     
     // didn't quite work out
     // the size after creating framesetter (170.78125, 266.0) boundingBox (0.0, 0.0, 179.671875, 257.6)
-    func getTextSize(frameSetter : CTFramesetterRef) -> CGSize {
+    func getTextSizeFromFrameSetter(frameSetter : CTFramesetterRef) -> CGSize {
         // method 1
         let maxSize = CGSizeMake(fontBoxWidth, 0)
         let size = CTFramesetterSuggestFrameSizeWithConstraints(frameSetter, CFRangeMake(0, 0), nil, maxSize, nil)
@@ -366,43 +362,53 @@ class ViewController: UIViewController {
     }
     
     
-          // standardized method to compute rendered text bounding box
-    //    func getTextSize(frame : CTFrameRef) -> CGSize {
-    //        let framePath = CTFrameGetPath(frame)
-    //        let frameRect = CGPathGetBoundingBox(framePath)
-    //
-    //        let lines = CTFrameGetLines(frame)
-    //        let numLines = CFArrayGetCount(lines)
-    //
-    //        var maxWidth = 0
-    //        var textHeight = 0
-    //
-    //        // Now run through each line determining the maximum width of all the lines.
-    //        // We special case the last line of text. While we've got it's descent handy,
-    //        // we'll use it to calculate the typographic height of the text as well.
-    //        var lastLineIndex : CFIndex = numLines - 1
-    //        for var index = 0; index < numLines; index++ {
-    //            maxWidth = width;
-    //
-    //            if(index == lastLineIndex)
-    //            {
-    //                // Get the origin of the last line. We add the descent to this
-    //                // (below) to get the bottom edge of the last line of text.
-    //                var  lastLineOrigin : CGPoint
-    //                CTFrameGetLineOrigins(frame, CFRangeMake(lastLineIndex, 1), &lastLineOrigin)
-    //
-    //                // The height needed to draw the text is from the bottom of the last line
-    //                // to the top of the frame.
-    //                textHeight =  CGRectGetMaxY(frameRect) - lastLineOrigin.y + descent
-    //            }
-    //        }
-    //
-    //        // For some text the exact typographic bounds is a fraction of a point too
-    //        // small to fit the text when it is put into a context. We go ahead and round
-    //        // the returned drawing area up to the nearest point.  This takes care of the
-    //        // discrepencies.
-    //        return CGSizeMake(ceil(maxWidth), ceil(textHeight));
-    //    }
+    // standardized method to compute rendered text bounding box
+    // http://stackoverflow.com/a/9697647/51700
+    func getTextSizeFromFrame(frame : CTFrameRef) -> CGSize {
+        let framePath = CTFrameGetPath(frame)
+        let frameRect = CGPathGetBoundingBox(framePath)
+
+        let lines = CTFrameGetLines(frame) as NSArray
+        let numLines = CFArrayGetCount(lines)
+
+        var maxWidth : CGFloat = 0
+        var textHeight : CGFloat = 0
+
+        // Now run through each line determining the maximum width of all the lines.
+        // We special case the last line of text. While we've got it's descent handy,
+        // we'll use it to calculate the typographic height of the text as well.
+        var lastLineIndex : CFIndex = numLines - 1
+        for var index = 0; index < numLines; index++ {
+            var ascent = CGFloat(0),
+                descent = CGFloat(0),
+                leading = CGFloat(0),
+                width = CGFloat(0)
+            let line = lines[0] as! CTLine
+//            CTLineGetTypographicBounds(line: CTLine!, ascent: UnsafeMutablePointer<CGFloat>, descent: UnsafeMutablePointer<CGFloat>, leading: UnsafeMutablePointer<CGFloat>)
+            width = CGFloat(CTLineGetTypographicBounds(line, &ascent,  &descent, &leading))
+            
+            if width > maxWidth {
+                maxWidth = width
+            }
+            
+            if index == lastLineIndex {
+                // Get the origin of the last line. We add the descent to this
+                // (below) to get the bottom edge of the last line of text.
+                var  lastLineOrigin : CGPoint = CGPointMake(0,0)
+                CTFrameGetLineOrigins(frame, CFRangeMake(lastLineIndex, 1), &lastLineOrigin)
+
+                // The height needed to draw the text is from the bottom of the last line
+                // to the top of the frame.
+                textHeight =  CGRectGetMaxY(frameRect) - lastLineOrigin.y + descent
+            }
+        }
+
+        // For some text the exact typographic bounds is a fraction of a point too
+        // small to fit the text when it is put into a context. We go ahead and round
+        // the returned drawing area up to the nearest point.  This takes care of the
+        // discrepencies.
+        return CGSizeMake(ceil(maxWidth), ceil(textHeight));
+    }
 
 }
 
