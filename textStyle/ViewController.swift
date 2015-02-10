@@ -80,7 +80,7 @@ class ViewController: UIViewController {
 
 //        drawTextToScreen("I am a meat popsicle, no really that is precisely what I am", point: CGPointMake(CGFloat(100),CGFloat(50)))
 
-        drawText(CGPointMake(CGFloat(100),CGFloat(50)))
+        drawText(CGSizeMake(self.view.frame.width,self.view.frame.height),point: CGPointMake(CGFloat(100),CGFloat(50)))
     }
 
     override func didReceiveMemoryWarning() {
@@ -131,7 +131,8 @@ class ViewController: UIViewController {
         fontCT = CTFontCreateWithName(font, fontSize, nil)
         autoSizeEnabled = false
         align = "Top"
-        baseline = "Top"
+//        baseline = "Top"
+        baseline = "Bottom"
 //        baseline = "Middle"
         
         borderLineWidth = CGFloat(4.0)
@@ -178,13 +179,13 @@ class ViewController: UIViewController {
         
     }
 
-    func drawText(point: CGPoint) {
+    func drawText(destSize: CGSize, point: CGPoint) {
 //        UIGraphicsBeginImageContextWithOptions(CGSizeMake(fontBoxWidth,fontBoxHeight), false, 2.0)
 //        let context = UIGraphicsGetCurrentContext()
 
         
-        var fullWidth   = UInt(self.view.frame.width)
-        var fullHeight  = UInt(self.view.frame.height)
+        var fullWidth   = UInt(destSize.width)
+        var fullHeight  = UInt(destSize.height)
         
         // getting scaled from later draw call into full sized image
 //        var width = UInt(fontBoxWidth)
@@ -274,7 +275,7 @@ class ViewController: UIViewController {
 //            fontBoxHeight = rect.height + fontBoundingBox.height
             fontBoxHeight = rect.height + fontBoundingBox.height
 //            fontBoxHeight = rect.height + boundingBox.origin.y - boundingBox.height
-            println("font bounding box \(fontBoundingBox), height \(fontBoundingBox.height)")
+            println("font bounding box \(fontBoundingBox), height \(fontBoundingBox.height) fontboxWidth \(fontBoxWidth) fontboxHeight \(fontBoxHeight)")
 //            fontBoxHeight = rect.height - boundingBox.height // need to compensate for something off here
         }
         
@@ -313,6 +314,7 @@ class ViewController: UIViewController {
 
         //        CGPathAddRect(path, nil, bounds)
         if (baseline == "Top") {
+            println("baseline top bounds \(bounds)")
             CGPathAddRect(path, nil, bounds) // Draw normally (top)
         }
         else if (baseline == "Middle") {
@@ -321,11 +323,12 @@ class ViewController: UIViewController {
             midHeight = midHeight - (boundingBox.height / 2.0)
             println("baseline middle midheight offset \(midHeight), bounds \(bounds) boundingBox \(boundingBox)")
             
-            CGPathAddRect(path, nil, CGRectMake(bounds.origin.x, bounds.origin.y + midHeight, bounds.width, boundingBox.height))
+            CGPathAddRect(path, nil, CGRectMake(bounds.origin.x, bounds.origin.y + midHeight, bounds.width, bounds.height))
         }
         else {
             let bottomHeight = bounds.height - boundingBox.height
-            CGPathAddRect(path, nil, CGRectMake(bounds.origin.x, bounds.origin.y + bottomHeight, bounds.width, boundingBox.height));
+            println("baseline bottom bounds.height \(bounds.height) boundingBox.height \(boundingBox.height) bottomHeight offset \(bottomHeight)")
+            CGPathAddRect(path, nil, CGRectMake(bounds.origin.x, bounds.origin.y - bottomHeight, bounds.width, bounds.height));
         }
 
         // drop shadow
