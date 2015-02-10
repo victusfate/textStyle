@@ -23,66 +23,51 @@ let TS_DEFAULT_HEIGHT   = CGFloat(100)
 class ViewController: UIViewController {
     
     var text = ""
-    var fontName = "Helvetica"
+
     var fontBoxWidth = TS_DEFAULT_WIDTH
     var fontBoxHeight = TS_DEFAULT_HEIGHT
-    var fontSize = CGFloat(32)
-    var textColorUI = UIColor(red: 1.0, green: 0, blue: 0, alpha: 1.0)
-    var textColor   : CGColor?
-    var fontUI : UIFont?
-    var font : CTFontRef?
-    var lineSpacing = CGFloat(10)
-    var autoSize = false
-    
-    var borderWidth = CGFloat(4.0)
-    var borderColor    = UIColor(red: 0.0, green: 0.0, blue: 1.0, alpha: 1.0).CGColor
-    var backgroundColor = UIColor(red: 0.0, green: 1.0, blue: 0.0, alpha: 0.5).CGColor
-    var dropShadowColor = UIColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 1.0).CGColor
-    var shadowX = CGFloat(3.0)
-    var shadowY = CGFloat(3.0)
-    var shadowBlur = CGFloat(5.0)
-    var borderShadowX = CGFloat(3.0)
-    var borderShadowY = CGFloat(3.0)
-    var align = "Left"   // "Left", "Center", "Right"
-    var baseline = "Top" // "Top", "Middle", "Bottom"
     var boundingBox = CGRectMake(0, 0, TS_DEFAULT_WIDTH, TS_DEFAULT_HEIGHT)
+
+    var fontColorUI = UIColor(red: 1.0, green: 0, blue: 0, alpha: 1.0)
+
+    var fontUI : UIFont?
+    var fontCT : CTFontRef?
+//    var lineSpacing = CGFloat(10)
     
 
-    // all properties
-//    "align":                { "type": "int",      "val": "Theme.TextAlign.Left"    },
-//    "autoSizeEnabled":      { "type": "bool",     "val": false                     },
-//    "autoSizeMax":          { "type": "float",    "val": 10                        },
-//    "autoSizeMin":          { "type": "float",    "val": 0.25                      },
-//    "backgroundColor":      { "type": "string",   "val": "rgba(0,0,0,0)"           },
-//    "baseline":             { "type": "int",      "val": "Theme.TextBaseline.Top"  },
-//    "borderColor":          { "type": "string",   "val": "#FFFFFF"                 },
-//    "borderLineWidth":      { "type": "float",    "val": 0.003125                  },
-//    "borderOutline":        { "type": "bool",     "val": false                     },
-//    "borderPadding":        { "type": "float",    "val": 0.0078125                 },
-//    "borderPerLine":        { "type": "bool",     "val": false                     },
-//    "borderShadowBlur":     { "type": "float",    "val": 0                         },
-//    "borderShadowColor":    { "type": "string",   "val": "#000"                    },
-//    "borderShadowX":        { "type": "float",    "val": 0                         },
-//    "borderShadowY":        { "type": "float",    "val": 0                         },
-//    "capsAll":              { "type": "bool",     "val": false                     },
-//    "capsFirst":            { "type": "bool",     "val": false                     },
-//    "capsLower":            { "type": "bool",     "val": false                     },
-//    "font":                 { "type": "string",   "val": "Sans Serif"              },
-//    "fontColor":            { "type": "string",   "val": "#FFFFFF"                 },
-//    "fontSize":             { "type": "float",    "val": 0                         },
-//    "fontSlant":            { "type": "int",      "val": "Theme.FontSlant.Normal"  },
-//    "fontWeight":           { "type": "int",      "val": "Theme.FontWeight.Normal" },
-//    "kerning":              { "type": "float",    "val": 0                         },
-//    "lineHeight":           { "type": "float",    "val": 0                         },
-//    "shadowBlur":           { "type": "float",    "val": 0                         },
-//    "shadowColor":          { "type": "string",   "val": "#000"                    },
-//    "shadowX":              { "type": "float",    "val": 0                         },
-//    "shadowY":              { "type": "float",    "val": 0                         },
-//    "maxTextLines":         { "type": "int",      "val": 0                         },
-//    "useLineHeight":        { "type": "bool",     "val": false                     }
-    
-    
-    
+    // all properties, see oFontProperties.json in cameo-montage-script
+    var align = "Left"   // "Left", "Center", "Right"
+    var autoSizeEnabled = false
+    var autoSizeMax = 10 // scale factor to nominal font size
+    var autoSizeMin = 0.25
+    var backgroundColor = UIColor(red: 0.0, green: 1.0, blue: 0.0, alpha: 0.5).CGColor
+    var baseline = "Top" // "Top", "Middle", "Bottom"
+    var borderColor    = UIColor(red: 0.0, green: 0.0, blue: 1.0, alpha: 1.0).CGColor
+    var borderLineWidth = CGFloat(4.0)
+    var borderOutline = true
+    var borderPadding = CGFloat(0.0)
+    var borderPerLine = false
+    var borderShadowBlur = CGFloat(0.0)
+    var borderShadowColor = UIColor(red: 0.0, green: 0.0, blue: 1.0, alpha: 1.0).CGColor
+    var borderShadowX = CGFloat(3.0)
+    var borderShadowY = CGFloat(3.0)
+    var capsAll = false
+    var capsFirst = false
+    var capsLower = false
+    var font = "Helvetica"
+    var fontColor   : CGColor?
+    var fontSize = CGFloat(32)
+    var fontSlant = "Normal"  // "Normal", "Italics", "Oblique"
+    var fontWeight = "Normal" // "Lighter", "Normal", "Bold", "Bolder"
+    var kerning = CGFloat(0.0) // additional space beyond nominal
+    var lineHeight = CGFloat(10)
+    var shadowBlur = CGFloat(5.0)
+    var shadowColor = UIColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 1.0).CGColor
+    var shadowX = CGFloat(3.0)
+    var shadowY = CGFloat(3.0)
+    var maxTextLines = 10
+    var useLineHeight = false
+
     var para = NSMutableAttributedString()
 
     required init(coder aDecoder: NSCoder) {
@@ -107,29 +92,53 @@ class ViewController: UIViewController {
         return sqrt(v1/v2)
     }
     
+    func getLineHeight(font: CTFontRef) -> CGFloat {
+        let ascent = CTFontGetAscent(font)
+        let descent = CTFontGetDescent(font)
+        var leading = CTFontGetLeading(font)
+        
+        if leading < 0 {
+            leading = 0
+        }
+        leading = floor (leading + 0.5)
+        
+        let calcLineHeight = floor (ascent + 0.5) + floor (descent + 0.5) + leading;
+
+        var ascenderDelta = CGFloat(0)
+        if leading > 0 {
+            ascenderDelta = 0
+        }
+        else {
+            ascenderDelta = floor (0.2 * calcLineHeight + 0.5)
+        }
+        
+        let defaultLineHeight = calcLineHeight + ascenderDelta
+        return defaultLineHeight
+    }
+    
     func setProperties(inText: String, targetFontSize: CGFloat) {
         text = inText
-        fontName = "Helvetica"
+        font = "Helvetica"
         fontBoxWidth = CGFloat(200)
         fontBoxHeight = CGFloat(200)
         fontSize = targetFontSize
-        textColorUI = UIColor(red: 1.0, green: 0, blue: 0, alpha: 1.0)
-        textColor   = textColorUI.CGColor
-        fontUI = UIFont(name: fontName, size: fontSize) ?? UIFont.systemFontOfSize(fontSize)
+        fontColorUI = UIColor(red: 1.0, green: 0, blue: 0, alpha: 1.0)
+        fontColor   = fontColorUI.CGColor
+        fontUI = UIFont(name: font, size: fontSize) ?? UIFont.systemFontOfSize(fontSize)
 
 //        font = CTFontCreateWithName(name: fontName, size: fontSize, matrix: UnsafePointer<CGAffineTransform>)
         // https://developer.apple.com/library/prerelease/ios/documentation/Carbon/Reference/CTFontRef/index.html
-        font = CTFontCreateWithName(fontName, fontSize, nil)
-        lineSpacing = CGFloat(10)
-        autoSize = false
+        fontCT = CTFontCreateWithName(font, fontSize, nil)
+        autoSizeEnabled = false
         align = "Top"
         baseline = "Top"
 //        baseline = "Middle"
         
-        borderWidth = CGFloat(4.0)
+        borderLineWidth = CGFloat(4.0)
         borderColor    = UIColor(red: 0.0, green: 0.0, blue: 1.0, alpha: 1.0).CGColor
         backgroundColor = UIColor(red: 0.0, green: 1.0, blue: 0.0, alpha: 0.5).CGColor
-        dropShadowColor = UIColor(red: 0.4, green: 0.4, blue: 0.0, alpha: 1.0).CGColor
+        shadowColor = UIColor(red: 0.4, green: 0.4, blue: 0.0, alpha: 1.0).CGColor
+        lineHeight = CGFloat(10)
         
         let fontItal = CTFontCreateWithName("Georgia-Italic", fontSize, nil)
         let fontBold = CTFontCreateWithName("Helvetica-Bold", fontSize, nil)
@@ -137,9 +146,10 @@ class ViewController: UIViewController {
         //apply the current text style
         let sKeyAttributeName : String = (kCTFontAttributeName as NSString) as String
         let sForegroundColorAttributeName : String = (kCTForegroundColorAttributeName as NSString) as String
-        let textFont = [ sKeyAttributeName: font!,      sForegroundColorAttributeName: textColor!]
-        let italFont = [ sKeyAttributeName: fontItal!,  sForegroundColorAttributeName: textColor!]
-        let boldFont = [ sKeyAttributeName: fontBold!,  sForegroundColorAttributeName: textColor!]
+        let sKerningName : String = (kCTKernAttributeName as NSString) as String
+        let textFont = [ sKeyAttributeName: fontCT!,      sForegroundColorAttributeName: fontColor!]
+        let italFont = [ sKeyAttributeName: fontItal!,  sForegroundColorAttributeName: fontColor!]
+        let boldFont = [ sKeyAttributeName: fontBold!,  sForegroundColorAttributeName: fontColor!]
         
         let attrString1 = NSAttributedString(string: text, attributes: textFont as [NSObject : AnyObject])
         let attrString2 = NSAttributedString(string: " attributed", attributes:italFont as [NSObject : AnyObject])
@@ -156,7 +166,10 @@ class ViewController: UIViewController {
         //        paraStyle.firstLineHeadIndent = 15.0
         //        paraStyle.paragraphSpacingBefore = 10.0
         paraStyle.lineBreakMode = NSLineBreakMode.ByWordWrapping
-        paraStyle.lineSpacing = lineSpacing
+        if useLineHeight {
+            let lineSpacing = lineHeight - getLineHeight(fontCT!)
+            paraStyle.lineSpacing = lineSpacing
+        }
         
         // Apply paragraph styles to paragraph
         para.addAttribute(NSParagraphStyleAttributeName, value: paraStyle, range: NSRange(location: 0,length: para.length))
@@ -214,7 +227,7 @@ class ViewController: UIViewController {
         // height
         println("rect \(rect) fontboxwidth,height \(fontBoxWidth) \(fontBoxHeight) rect width \(rect.width) height \(rect.height)")
   
-        if autoSize {
+        if autoSizeEnabled {
             if rect.width > fontBoxWidth {
                 let scale = getScale(CGFloat(fontBoxWidth),v2: rect.width)
                 let newFontSize = scale * fontSize
@@ -257,7 +270,7 @@ class ViewController: UIViewController {
             boundingBox = rect
             // adjust fontBoxWidth/Height to rendered text
             fontBoxWidth = rect.width
-            var fontBoundingBox = CTFontGetBoundingBox(font)
+            var fontBoundingBox = CTFontGetBoundingBox(fontCT)
 //            fontBoxHeight = rect.height + fontBoundingBox.height
             fontBoxHeight = rect.height + fontBoundingBox.height
 //            fontBoxHeight = rect.height + boundingBox.origin.y - boundingBox.height
@@ -284,13 +297,13 @@ class ViewController: UIViewController {
         // then outline
         CGContextAddRect(context, bounds)
         CGContextSetStrokeColorWithColor(context, borderColor)
-        CGContextSetLineWidth(context, borderWidth)
+        CGContextSetLineWidth(context, borderLineWidth)
         CGContextStrokePath(context)
 
         // text rendering time
 
         // text vertical align, and horizontal align
-//        CGRect boundingBox = CTFontGetBoundingBox(font);
+//        CGRect boundingBox = CTFontGetBoundingBox(fontCT);
 //        
 //        //Get the position on the y axis
 //        float midHeight = self.frame.size.height / 2;
@@ -317,7 +330,7 @@ class ViewController: UIViewController {
 
         // drop shadow
         CGContextSaveGState(context)
-        CGContextSetShadowWithColor(context, CGSizeMake(shadowX, shadowY), shadowBlur, dropShadowColor)
+        CGContextSetShadowWithColor(context, CGSizeMake(shadowX, shadowY), shadowBlur, shadowColor)
         
         //rotate text
 //        CGContextSetTextMatrix(context, CGAffineTransformMakeRotation( CGFloat(M_PI) ))
@@ -340,79 +353,6 @@ class ViewController: UIViewController {
         view.addSubview(imageView)
     }
     
-    
-    func drawTextToScreen( text: String, point: CGPoint) -> UIImage
-    {
-        // Define string attributes
-        let textFont = [NSFontAttributeName: fontUI! ]
-        
-        let fontItal = UIFont(name: "Georgia-Italic", size:  fontSize) ?? UIFont.systemFontOfSize(fontSize)
-        let italFont = [NSFontAttributeName:fontItal]
-
-        let fontBold = UIFont(name: "Helvetica Bold", size:  fontSize) ?? UIFont.systemFontOfSize(fontSize)
-        let boldFont = [NSFontAttributeName:fontBold]
-        
-        
-        // Create a string that will be our paragraph
-        let para = NSMutableAttributedString()
-        
-        // Create locally formatted strings
-        let attrString1 = NSAttributedString(string: text, attributes: textFont)
-        let attrString2 = NSAttributedString(string: " attributed", attributes:italFont)
-        let attrString3 = NSAttributedString(string: " strings.", attributes:boldFont)
-        
-        // Add locally formatted strings to paragraph
-        para.appendAttributedString(attrString1)
-        para.appendAttributedString(attrString2)
-        para.appendAttributedString(attrString3)
-        
-        // Define paragraph styling
-        let paraStyle = NSMutableParagraphStyle()
-//        paraStyle.firstLineHeadIndent = 15.0
-//        paraStyle.paragraphSpacingBefore = 10.0
-        paraStyle.lineBreakMode = NSLineBreakMode.ByWordWrapping
-//        paraStyle.lineSpacing = lineSpacing
-        
-        // Apply paragraph styles to paragraph
-        para.addAttribute(NSParagraphStyleAttributeName, value: paraStyle, range: NSRange(location: 0,length: para.length))
-        
-        
-        // next step figure out how to draw to a rectangle or UIImage and render that to the screen
-//        let textRect = CGRectMake(0, 0, fontBoxWidth, fontBoxHeight)
-//        let textFontAttributes = [
-//            NSFontAttributeName: font,
-//            NSForegroundColorAttributeName: textColor,
-//            NSParagraphStyleAttributeName: paraStyle
-//        ]
-//        
-//        text.drawInRect(textRect, withAttributes: textFontAttributes)
-        
-        let view = MarginLabel(frame: CGRect(x: point.x, y: point.y, width: CGRectGetWidth(self.view.frame) - point.x, height: CGRectGetHeight(self.view.frame)-point.y))
-        view.numberOfLines = 0
-        view.textColor = textColorUI
-        view.layer.bounds = CGRectMake(0, 0, fontBoxWidth, fontBoxHeight)
-        view.layer.cornerRadius = CGFloat(8)
-        view.layer.masksToBounds = true
-        view.layer.borderColor = borderColor
-        view.layer.borderWidth = borderWidth
-        view.layer.backgroundColor = backgroundColor
-        
-        
-        // Add string to UITextView
-        view.attributedText = para
-        if autoSize {
-            view.sizeToFit()
-        }
-        
-        // Add UITextView to main view
-        self.view.addSubview(view)
-        
-        // now add to image
-        UIGraphicsBeginImageContext(view.frame.size)
-        var newImage = UIGraphicsGetImageFromCurrentImageContext()
-        UIGraphicsEndImageContext()
-        return newImage
-    }
 
           // standardized method to compute rendered text bounding box
     //    func getTextSize(frame : CTFrameRef) -> CGSize {
