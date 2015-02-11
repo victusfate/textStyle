@@ -128,6 +128,7 @@ class CMTextStyle {
         backgroundColor = UIColor(red: 0.0, green: 1.0, blue: 0.0, alpha: 0.5).CGColor
         shadowColor = UIColor(red: 0.4, green: 0.4, blue: 0.0, alpha: 1.0).CGColor
         lineHeight = CGFloat(10)
+        kerning = CGFloat(2.0)
         
         let fontItal = CTFontCreateWithName("Georgia-Italic", fontSize, nil)
         let fontBold = CTFontCreateWithName("Helvetica-Bold", fontSize, nil)
@@ -136,9 +137,14 @@ class CMTextStyle {
         let sKeyAttributeName : String = (kCTFontAttributeName as NSString) as String
         let sForegroundColorAttributeName : String = (kCTForegroundColorAttributeName as NSString) as String
         let sKerningName : String = (kCTKernAttributeName as NSString) as String
-        let textFont = [ sKeyAttributeName: fontCT!,      sForegroundColorAttributeName: fontColor!]
-        let italFont = [ sKeyAttributeName: fontItal!,  sForegroundColorAttributeName: fontColor!]
-        let boldFont = [ sKeyAttributeName: fontBold!,  sForegroundColorAttributeName: fontColor!]
+        var textFont = [ sKeyAttributeName: fontCT!,    sForegroundColorAttributeName: fontColor!]
+        var italFont = [ sKeyAttributeName: fontItal!,  sForegroundColorAttributeName: fontColor!]
+        var boldFont = [ sKeyAttributeName: fontBold!,  sForegroundColorAttributeName: fontColor!]
+        if kerning > 0 {
+            textFont = [ sKeyAttributeName: fontCT!,    sForegroundColorAttributeName: fontColor!, sKerningName: kerning ]
+            italFont = [ sKeyAttributeName: fontItal!,  sForegroundColorAttributeName: fontColor!, sKerningName: kerning]
+            boldFont = [ sKeyAttributeName: fontBold!,  sForegroundColorAttributeName: fontColor!, sKerningName: kerning]
+        }
         
         let attrString1 = NSAttributedString(string: text, attributes: textFont as [NSObject : AnyObject])
         let attrString2 = NSAttributedString(string: " attributed", attributes:italFont as [NSObject : AnyObject])
@@ -484,7 +490,7 @@ class CMTextStyle {
             width = CGFloat(0)
             let line = lines[index] as! CTLine
             //            CTLineGetTypographicBounds(line: CTLine!, ascent: UnsafeMutablePointer<CGFloat>, descent: UnsafeMutablePointer<CGFloat>, leading: UnsafeMutablePointer<CGFloat>)
-            width = CGFloat(CTLineGetTypographicBounds(line, &ascent,  &descent, &leading))
+            width = CGFloat(CTLineGetTypographicBounds(line, &ascent,  &descent, &leading) - CTLineGetTrailingWhitespaceWidth(line))
             ascent = floor(ascent + 0.5)
             descent = floor(descent + 0.5)
             leading = floor(leading + 0.5)
