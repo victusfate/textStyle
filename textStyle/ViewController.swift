@@ -18,25 +18,28 @@ class MarginLabel : UILabel {
 
 let TS_DEFAULT_WIDTH    = CGFloat(200)
 let TS_DEFAULT_HEIGHT   = CGFloat(100)
+let TS_DEFAULT_FULL_WIDTH = CGFloat(1280)
+let TS_DEFAULT_FULL_HEIGHT = CGFloat(720)
 
-
-class ViewController: UIViewController {
-    
+class CMTextStyle {
     var text = ""
-
+    
     var fontBoxWidth = TS_DEFAULT_WIDTH
     var fontBoxHeight = TS_DEFAULT_HEIGHT
     var boundingBox = CGRectMake(0, 0, TS_DEFAULT_WIDTH, TS_DEFAULT_HEIGHT)
-
+    var fullWidth = TS_DEFAULT_FULL_WIDTH
+    var fullHeight = TS_DEFAULT_FULL_HEIGHT
+    
     var fontColorUI = UIColor(red: 1.0, green: 0, blue: 0, alpha: 1.0)
-
+    
     var fontUI : UIFont?
     var fontCT : CTFontRef?
-//    var lineSpacing = CGFloat(10)
+    //    var lineSpacing = CGFloat(10)
     
-
+    
     // all properties, see oFontProperties.json in cameo-montage-script
-    var align = "Left"   // "Left", "Center", "Right"
+    // full width and height will scale just fontsize properties, 1080p 1.0, 720p
+    var align = "Center"   // "Left", "Center", "Right"
     var autoSizeEnabled = false
     var autoSizeMax = 10 // scale factor to nominal font size
     var autoSizeMin = 0.25
@@ -56,7 +59,7 @@ class ViewController: UIViewController {
     var capsLower = false
     var font = "Helvetica"
     var fontColor   : CGColor?
-    var fontSize = CGFloat(32)
+    var fontSize = CGFloat(32) // normalize based on passed full width /height 1080p 1.0, 720p some fraction (look up font size to pixels)
     var fontSlant = "Normal"  // "Normal", "Italics", "Oblique"
     var fontWeight = "Normal" // "Lighter", "Normal", "Bold", "Bolder"
     var kerning = CGFloat(0.0) // additional space beyond nominal
@@ -67,27 +70,9 @@ class ViewController: UIViewController {
     var shadowY = CGFloat(3.0)
     var maxTextLines = 10
     var useLineHeight = false
-
+    
     var para = NSMutableAttributedString()
 
-    required init(coder aDecoder: NSCoder) {
-        super.init(coder: aDecoder)
-        setProperties("I am a meat popsicle, no really that is precisely what I am", targetFontSize: CGFloat(32))
-    }
-    
-    override func viewDidLoad() {
-        super.viewDidLoad()
-
-//        drawTextToScreen("I am a meat popsicle, no really that is precisely what I am", point: CGPointMake(CGFloat(100),CGFloat(50)))
-
-        drawText(CGSizeMake(self.view.frame.width,self.view.frame.height),point: CGPointMake(CGFloat(100),CGFloat(50)))
-    }
-
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
-    }
-    
     func getScale(v1: CGFloat, v2: CGFloat) -> CGFloat {
         return sqrt(v1/v2)
     }
@@ -103,7 +88,7 @@ class ViewController: UIViewController {
         leading = floor (leading + 0.5)
         
         let calcLineHeight = floor (ascent + 0.5) + floor (descent + 0.5) + leading;
-
+        
         var ascenderDelta = CGFloat(0)
         if leading > 0 {
             ascenderDelta = 0
@@ -125,15 +110,18 @@ class ViewController: UIViewController {
         fontColorUI = UIColor(red: 1.0, green: 0, blue: 0, alpha: 1.0)
         fontColor   = fontColorUI.CGColor
         fontUI = UIFont(name: font, size: fontSize) ?? UIFont.systemFontOfSize(fontSize)
-
-//        font = CTFontCreateWithName(name: fontName, size: fontSize, matrix: UnsafePointer<CGAffineTransform>)
+        
+        //        font = CTFontCreateWithName(name: fontName, size: fontSize, matrix: UnsafePointer<CGAffineTransform>)
         // https://developer.apple.com/library/prerelease/ios/documentation/Carbon/Reference/CTFontRef/index.html
         fontCT = CTFontCreateWithName(font, fontSize, nil)
         autoSizeEnabled = false
-        align = "Top"
-//        baseline = "Top"
-//        baseline = "Bottom"
-        baseline = "Middle"
+        align = "Center"
+        //        align = "Left"
+        //        align = "Right"
+        baseline = "Top"
+        //        baseline = "Bottom"
+        //        baseline = "Middle"
+        borderPerLine = true
         
         borderLineWidth = CGFloat(4.0)
         borderColor    = UIColor(red: 0.0, green: 0.0, blue: 1.0, alpha: 1.0).CGColor
@@ -171,25 +159,30 @@ class ViewController: UIViewController {
             let lineSpacing = lineHeight - getLineHeight(fontCT!)
             paraStyle.lineSpacing = lineSpacing
         }
+        if align == "Left" {
+            paraStyle.alignment = NSTextAlignment.Left
+        }
+        else if align == "Right" {
+            paraStyle.alignment = NSTextAlignment.Right
+        }
+        else { // default center
+            paraStyle.alignment = NSTextAlignment.Center
+        }
         
         // Apply paragraph styles to paragraph
         para.addAttribute(NSParagraphStyleAttributeName, value: paraStyle, range: NSRange(location: 0,length: para.length))
         
-//        let expectedLabelSize = (text + " attributed" + " strings.").sizeWithFont([UIFont fontWithName:@"Helvetica" size:14] constrainedToSize:CGSizeMake(MAXFLOAT, MAXFLOAT)];
+        //        let expectedLabelSize = (text + " attributed" + " strings.").sizeWithFont([UIFont fontWithName:@"Helvetica" size:14] constrainedToSize:CGSizeMake(MAXFLOAT, MAXFLOAT)];
         
     }
-
-    func drawText(destSize: CGSize, point: CGPoint) {
-//        UIGraphicsBeginImageContextWithOptions(CGSizeMake(fontBoxWidth,fontBoxHeight), false, 2.0)
-//        let context = UIGraphicsGetCurrentContext()
-
-        
-        var fullWidth   = UInt(destSize.width)
-        var fullHeight  = UInt(destSize.height)
+    
+    func drawText(point: CGPoint) -> CGImage {
+        //        UIGraphicsBeginImageContextWithOptions(CGSizeMake(fontBoxWidth,fontBoxHeight), false, 2.0)
+        //        let context = UIGraphicsGetCurrentContext()
         
         // getting scaled from later draw call into full sized image
-//        var width = UInt(fontBoxWidth)
-//        var height = UInt(fontBoxHeight)
+        //        var width = UInt(fontBoxWidth)
+        //        var height = UInt(fontBoxHeight)
         var width = UInt(fullWidth)
         var height = UInt(fullHeight)
         // ensure even width height, hopefully that will lead to 16-byte alignment below
@@ -203,31 +196,69 @@ class ViewController: UIViewController {
         let bitsPerComponent : UInt = 8
         let bytesPerRow : UInt = 4 * width
         let colorSpace = CGColorSpaceCreateDeviceRGB()
-//        enum CGImageAlphaInfo : UInt32 {
-//            case None
-//            case PremultipliedLast
-//            case PremultipliedFirst
-//            case Last
-//            case First
-//            case NoneSkipLast
-//            case NoneSkipFirst
-//            case Only
+        //        enum CGImageAlphaInfo : UInt32 {
+        //            case None
+        //            case PremultipliedLast
+        //            case PremultipliedFirst
+        //            case Last
+        //            case First
+        //            case NoneSkipLast
+        //            case NoneSkipFirst
+        //            case Only
+        //        }
+        
+//        struct CGBitmapInfo : RawOptionSetType {
+//            init(_ rawValue: UInt32)
+//            init(rawValue: UInt32)
+//            
+//            static var AlphaInfoMask: CGBitmapInfo { get }
+//            static var FloatComponents: CGBitmapInfo { get }
+//            
+//            static var ByteOrderMask: CGBitmapInfo { get }
+//            static var ByteOrderDefault: CGBitmapInfo { get }
+//            static var ByteOrder16Little: CGBitmapInfo { get }
+//            static var ByteOrder32Little: CGBitmapInfo { get }
+//            static var ByteOrder16Big: CGBitmapInfo { get }
+//            static var ByteOrder32Big: CGBitmapInfo { get }
+
+         // MVO pulled this from GPUImage
+//        } else if (byteOrderInfo == kCGBitmapByteOrderDefault || byteOrderInfo == kCGBitmapByteOrder32Big) {
+//            /* Big endian, for alpha-last we can use this bitmap directly in GL */
+//            CGImageAlphaInfo alphaInfo = bitmapInfo & kCGBitmapAlphaInfoMask;
+//            if (alphaInfo != kCGImageAlphaPremultipliedLast && alphaInfo != kCGImageAlphaLast &&
+//                alphaInfo != kCGImageAlphaNoneSkipLast) {
+//                shouldRedrawUsingCoreGraphics = YES;
+//            } else {
+//                /* Can access directly using GL_RGBA pixel format */
+//                format = GL_RGBA;
+//            }
 //        }
-
-        let bitmapInfo = CGBitmapInfo(CGImageAlphaInfo.PremultipliedLast.rawValue)
-
-//        Tip:  When you create a bitmap graphics context, you’ll get the best performance 
-//        if you make sure the data and bytesPerRow are 16-byte aligned.
+    
+        // set buffer to big endian and alpha to premultiplied last for direct use in opengl maybe
+        // http://stackoverflow.com/a/25773894/51700
+        // mixed types struct, enum can't just | them
+        var bitmapInfo : CGBitmapInfo = .ByteOrder32Big
+        bitmapInfo &= ~CGBitmapInfo.AlphaInfoMask
+        bitmapInfo |= CGBitmapInfo(CGImageAlphaInfo.PremultipliedLast.rawValue)
+        
+            // CGImageAlphaInfo.PremultipliedLast | CGBitmapInfo.ByteOrder32Big
+        
+        //        Tip:  When you create a bitmap graphics context, you’ll get the best performance
+        //        if you make sure the data and bytesPerRow are 16-byte aligned.
         let context = CGBitmapContextCreate(nil, width, height, bitsPerComponent, bytesPerRow, colorSpace, bitmapInfo)
-//        CGContextTranslateCTM(context, 0, CGFloat(height))
-//        CGContextScaleCTM(context, 1.0, -1.0)
-
+        
+        var transform = CGAffineTransformIdentity
+        //        transform = CGAffineTransformMakeRotation(CGFloat(90 * M_PI / 180.0))
+        CGContextSetTextMatrix(context, transform)
+        //        CGContextTranslateCTM(context, 0, CGFloat(height))
+        //        CGContextScaleCTM(context, 1.0, -1.0)
+        
         
         let options : NSStringDrawingOptions = .UsesFontLeading | .UsesLineFragmentOrigin | .UsesDeviceMetrics
         let rect = para.boundingRectWithSize(CGSizeMake(fontBoxWidth,10000), options:  options, context: nil)
         // height
         println("rect \(rect) fontboxwidth,height \(fontBoxWidth) \(fontBoxHeight) rect width \(rect.width) height \(rect.height)")
-  
+        
         if autoSizeEnabled {
             if rect.width > fontBoxWidth {
                 let scale = getScale(CGFloat(fontBoxWidth),v2: rect.width)
@@ -272,19 +303,19 @@ class ViewController: UIViewController {
             // adjust fontBoxWidth/Height to rendered text
             fontBoxWidth = rect.width
             var fontBoundingBox = CTFontGetBoundingBox(fontCT)
-//            fontBoxHeight = rect.height + fontBoundingBox.height
+            //            fontBoxHeight = rect.height + fontBoundingBox.height
             fontBoxHeight = rect.height + fontBoundingBox.height
-//            fontBoxHeight = rect.height + boundingBox.origin.y - boundingBox.height
+            //            fontBoxHeight = rect.height + boundingBox.origin.y - boundingBox.height
             println("font bounding box \(fontBoundingBox), height \(fontBoundingBox.height) fontboxWidth \(fontBoxWidth) fontboxHeight \(fontBoxHeight)")
-//            fontBoxHeight = rect.height - boundingBox.height // need to compensate for something off here
+            //            fontBoxHeight = rect.height - boundingBox.height // need to compensate for something off here
         }
         
         CGContextSetInterpolationQuality(context, kCGInterpolationHigh)
-
-        // scale example
-//        CGContextDrawImage(context, CGRect(origin: CGPointZero, size: CGSize(width: CGFloat(width), height: CGFloat(height))), image)
         
-        CGContextSetTextMatrix(context, CGAffineTransformIdentity);
+        // scale example
+        //        CGContextDrawImage(context, CGRect(origin: CGPointZero, size: CGSize(width: CGFloat(width), height: CGFloat(height))), image)
+        
+        //        CGContextSetTextMatrix(context, CGAffineTransformIdentity);
         
         // set background to 0,0,0,0
         let fullRectangle = CGRectMake(CGFloat(0),CGFloat(0),CGFloat(fullWidth),CGFloat(fullHeight))
@@ -293,32 +324,52 @@ class ViewController: UIViewController {
         
         
         let path = CGPathCreateMutable()
-        let bounds = CGRectMake(point.x, point.y, fontBoxWidth, fontBoxHeight)
-
-
-//        CGContextAddRect(context, bounds)
-//        CGContextStrokePath(context)
-        CGContextSetFillColorWithColor(context,backgroundColor)
-        CGContextFillRect(context, bounds)
-
+        let leading = floor( CTFontGetLeading(fontCT) + 0.5)
+        let ascent = floor( CTFontGetAscent(fontCT) + 0.5)
+        let descent = floor( CTFontGetDescent(fontCT) + 0.5)
+        var lineHeight = ascent + descent + leading
+        var ascenderDelta = CGFloat(0)
+        if leading > 0 {
+            ascenderDelta = 0
+        }
+        else {
+            ascenderDelta = floor( 0.2 * lineHeight + 0.5 )
+        }
+        lineHeight = lineHeight + ascenderDelta
         
-        // then outline
-        CGContextAddRect(context, bounds)
-        CGContextSetStrokeColorWithColor(context, borderColor)
-        CGContextSetLineWidth(context, borderLineWidth)
-        CGContextStrokePath(context)
-
+        let bounds = CGRectMake(point.x, point.y, fontBoxWidth, fontBoxHeight)
+        
+        if !borderPerLine {
+            //            let backgroundBounds = CGRectMake(point.x, point.y, fontBoxWidth, fontBoxHeight)
+            var backgroundBounds = CGRectMake(boundingBox.origin.x + point.x, boundingBox.origin.y + point.y + lineHeight, boundingBox.width, boundingBox.height + ascenderDelta)
+            //            backgroundBounds.origin.x += point.x
+            //            backgroundBounds.origin.y += point.y + lineHeight
+            //            backgroundBounds.height = backgroundBounds.height + ascenderDelta
+            println("leading \(leading) ascent \(ascent) descent \(descent) lineHeight \(lineHeight) ascenderDelta \(ascenderDelta) backgroundBounds \(backgroundBounds)")
+            //        CGContextAddRect(context, bounds)
+            //        CGContextStrokePath(context)
+            CGContextSetFillColorWithColor(context,backgroundColor)
+            CGContextFillRect(context, backgroundBounds)
+            
+            
+            // then outline
+            CGContextAddRect(context, backgroundBounds)
+            CGContextSetStrokeColorWithColor(context, borderColor)
+            CGContextSetLineWidth(context, borderLineWidth)
+            CGContextStrokePath(context)
+        }
+        
         // text rendering time
-
+        
         // text vertical align, and horizontal align
-//        CGRect boundingBox = CTFontGetBoundingBox(fontCT);
-//        
-//        //Get the position on the y axis
-//        float midHeight = self.frame.size.height / 2;
-//        midHeight -= boundingBox.size.height / 2;
-//        
-//        CGPathAddRect(path, NULL, CGRectMake(0, midHeight, self.frame.size.width, boundingBox.size.height));
-
+        //        CGRect boundingBox = CTFontGetBoundingBox(fontCT);
+        //
+        //        //Get the position on the y axis
+        //        float midHeight = self.frame.size.height / 2;
+        //        midHeight -= boundingBox.size.height / 2;
+        //
+        //        CGPathAddRect(path, NULL, CGRectMake(0, midHeight, self.frame.size.width, boundingBox.size.height));
+        
         //        CGPathAddRect(path, nil, bounds)
         if (baseline == "Top") {
             println("baseline top bounds \(bounds)")
@@ -338,29 +389,27 @@ class ViewController: UIViewController {
             // - bottomHeight based on lower left origin
             CGPathAddRect(path, nil, CGRectMake(bounds.origin.x, bounds.origin.y - bottomHeight, bounds.width, bounds.height));
         }
-
+        
         // drop shadow
         CGContextSaveGState(context)
         CGContextSetShadowWithColor(context, CGSizeMake(shadowX, shadowY), shadowBlur, shadowColor)
         
         //rotate text
-//        CGContextSetTextMatrix(context, CGAffineTransformMakeRotation( CGFloat(M_PI) ))
+        //        CGContextSetTextMatrix(context, CGAffineTransformMakeRotation( CGFloat(M_PI) ))
         // Create the framesetter with the attributed string.
         
         let framesetter = CTFramesetterCreateWithAttributedString(para)
-//        let theSize = getTextSizeFromFrameSetter(framesetter)
-//        println("the size after creating framesetter \(theSize) boundingBox \(boundingBox)")
+        //        let theSize = getTextSizeFromFrameSetter(framesetter)
+        //        println("the size after creating framesetter \(theSize) boundingBox \(boundingBox)")
         
         let frame = CTFramesetterCreateFrame(framesetter,CFRangeMake(0, 0), path, nil)
         let theSize = getTextSizeFromFrame(frame)
+        drawBackgroundPerLine(context,point: point, frame: frame)
         println("the size after creating frame \(theSize) boundingBox \(boundingBox)")
         
         CTFrameDraw(frame, context)
+        return CGBitmapContextCreateImage(context)
         
-        let image = UIImage(CGImage: CGBitmapContextCreateImage(context))
-        let imageView = UIImageView(image: image!)
-        imageView.frame = CGRectMake(0,0,CGFloat(fullWidth),CGFloat(fullWidth))
-        view.addSubview(imageView)
     }
     
     // didn't quite work out
@@ -378,24 +427,24 @@ class ViewController: UIViewController {
     func getTextSizeFromFrame(frame : CTFrameRef) -> CGSize {
         let framePath = CTFrameGetPath(frame)
         let frameRect = CGPathGetBoundingBox(framePath)
-
+        
         let lines = CTFrameGetLines(frame) as NSArray
         let numLines = CFArrayGetCount(lines)
-
+        
         var maxWidth : CGFloat = 0
         var textHeight : CGFloat = 0
-
+        
         // Now run through each line determining the maximum width of all the lines.
         // We special case the last line of text. While we've got it's descent handy,
         // we'll use it to calculate the typographic height of the text as well.
         var lastLineIndex : CFIndex = numLines - 1
         for var index = 0; index < numLines; index++ {
             var ascent = CGFloat(0),
-                descent = CGFloat(0),
-                leading = CGFloat(0),
-                width = CGFloat(0)
+            descent = CGFloat(0),
+            leading = CGFloat(0),
+            width = CGFloat(0)
             let line = lines[0] as! CTLine
-//            CTLineGetTypographicBounds(line: CTLine!, ascent: UnsafeMutablePointer<CGFloat>, descent: UnsafeMutablePointer<CGFloat>, leading: UnsafeMutablePointer<CGFloat>)
+            //            CTLineGetTypographicBounds(line: CTLine!, ascent: UnsafeMutablePointer<CGFloat>, descent: UnsafeMutablePointer<CGFloat>, leading: UnsafeMutablePointer<CGFloat>)
             width = CGFloat(CTLineGetTypographicBounds(line, &ascent,  &descent, &leading))
             
             if width > maxWidth {
@@ -407,19 +456,111 @@ class ViewController: UIViewController {
                 // (below) to get the bottom edge of the last line of text.
                 var  lastLineOrigin : CGPoint = CGPointMake(0,0)
                 CTFrameGetLineOrigins(frame, CFRangeMake(lastLineIndex, 1), &lastLineOrigin)
-
+                
                 // The height needed to draw the text is from the bottom of the last line
                 // to the top of the frame.
                 textHeight =  CGRectGetMaxY(frameRect) - lastLineOrigin.y + descent
             }
         }
-
+        
         // For some text the exact typographic bounds is a fraction of a point too
         // small to fit the text when it is put into a context. We go ahead and round
         // the returned drawing area up to the nearest point.  This takes care of the
         // discrepencies.
         return CGSizeMake(ceil(maxWidth), ceil(textHeight));
     }
+    
+    func drawBackgroundPerLine(context : CGContext!, point: CGPoint, frame : CTFrameRef) {
+        let framePath = CTFrameGetPath(frame)
+        let frameRect = CGPathGetBoundingBox(framePath)
+        
+        let lines = CTFrameGetLines(frame) as NSArray
+        let numLines = CFArrayGetCount(lines)
+        
+        for var index = 0; index < numLines; index++ {
+            var ascent = CGFloat(0),
+            descent = CGFloat(0),
+            leading = CGFloat(0),
+            width = CGFloat(0)
+            let line = lines[index] as! CTLine
+            //            CTLineGetTypographicBounds(line: CTLine!, ascent: UnsafeMutablePointer<CGFloat>, descent: UnsafeMutablePointer<CGFloat>, leading: UnsafeMutablePointer<CGFloat>)
+            width = CGFloat(CTLineGetTypographicBounds(line, &ascent,  &descent, &leading))
+            ascent = floor(ascent + 0.5)
+            descent = floor(descent + 0.5)
+            leading = floor(leading + 0.5)
+            var lineHeight = ascent + descent + leading
+            var ascenderDelta = CGFloat(0)
+            if leading > 0 {
+                ascenderDelta = 0
+            }
+            else {
+                ascenderDelta = floor( 0.2 * lineHeight + 0.5 )
+            }
+            lineHeight = lineHeight + ascenderDelta
+            
+            if borderPerLine {
+                var  lineOrigin : CGPoint = CGPointMake(0,0)
+                CTFrameGetLineOrigins(frame, CFRangeMake(index, 1), &lineOrigin)
+                
+                //                let bounds = CGRectMake(point.x + lineOrigin.x, point.y + lineOrigin.y - leading - (ascent+descent), width, ascent + descent)
+                var xOffset = CGFloat(0.0)
+                if align == "Center" {
+                    var fontBoundingBox = CTFontGetBoundingBox(fontCT)
+                    xOffset = fontBoundingBox.origin.x
+                }
+                let bounds = CGRectMake(point.x + lineOrigin.x, point.y + lineOrigin.y - descent, width, ascent + descent)
+                
+                println("line \(index) point \(point) lineOrigin \(lineOrigin) xoffset \(xOffset) width \(width) descent \(descent)")
+                
+                // background
+                CGContextSetFillColorWithColor(context,backgroundColor)
+                CGContextFillRect(context, bounds)
+                
+                
+                // then outline
+                CGContextAddRect(context, bounds)
+                CGContextSetStrokeColorWithColor(context, borderColor)
+                CGContextSetLineWidth(context, borderLineWidth)
+                CGContextStrokePath(context)
+            }
+            
+        }
+    }
+    
+}
+
+
+class ViewController: UIViewController {
+    var textStyle  = CMTextStyle()
+    
+
+    required init(coder aDecoder: NSCoder) {
+        super.init(coder: aDecoder)
+        textStyle.setProperties("I am a meat popsicle, no really that is precisely what I am", targetFontSize: CGFloat(32))
+    }
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+//        drawTextToScreen("I am a meat popsicle, no really that is precisely what I am", point: CGPointMake(CGFloat(100),CGFloat(50)))
+
+        textStyle.fullWidth = self.view.frame.width
+        textStyle.fullHeight = self.view.frame.height
+        self.view.backgroundColor = UIColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 1.0)
+        let cgImage = textStyle.drawText(CGPointMake(CGFloat(100),CGFloat(50)))
+
+        let image = UIImage(CGImage: cgImage)
+        let imageView = UIImageView(image: image!)
+        imageView.frame = CGRectMake(0,0,CGFloat(textStyle.fullWidth),CGFloat(textStyle.fullWidth))
+        view.addSubview(imageView)
+        
+    }
+
+    override func didReceiveMemoryWarning() {
+        super.didReceiveMemoryWarning()
+        // Dispose of any resources that can be recreated.
+    }
+    
 
 }
 
