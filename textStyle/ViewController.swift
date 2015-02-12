@@ -124,13 +124,15 @@ class CMTextStyle {
 //        baseline = "Top"
          baseline = "Bottom"
 //        baseline = "Middle"
-        borderPerLine = true
+        borderPerLine = false
+        borderPadding = 6.0
         
         borderLineWidth = CGFloat(4.0)
         borderColor    = UIColor(red: 0.0, green: 0.0, blue: 1.0, alpha: 1.0).CGColor
         backgroundColor = UIColor(red: 0.0, green: 1.0, blue: 0.0, alpha: 0.5).CGColor
         shadowColor = UIColor(red: 0.2, green: 0.2, blue: 0.0, alpha: 1.0).CGColor
-        lineHeight = CGFloat(10)
+        lineHeight = CGFloat(60)
+        useLineHeight = true
         kerning = CGFloat(2.0)
         
         let fontItal = CTFontCreateWithName("Georgia-Italic", fontSize, nil)
@@ -150,14 +152,14 @@ class CMTextStyle {
         }
         
         let attrString1 = NSAttributedString(string: text, attributes: textFont as [NSObject : AnyObject])
-        let attrString2 = NSAttributedString(string: " attributed", attributes:italFont as [NSObject : AnyObject])
-        let attrString3 = NSAttributedString(string: " strings.", attributes:boldFont as [NSObject : AnyObject])
+//        let attrString2 = NSAttributedString(string: " attributed", attributes:italFont as [NSObject : AnyObject])
+//        let attrString3 = NSAttributedString(string: " strings.", attributes:boldFont as [NSObject : AnyObject])
         
         // Add locally formatted strings to paragraph
         para = NSMutableAttributedString()
         para.appendAttributedString(attrString1)
-        para.appendAttributedString(attrString2)
-        para.appendAttributedString(attrString3)
+//        para.appendAttributedString(attrString2)
+//        para.appendAttributedString(attrString3)
         
         // Define paragraph styling
         let paraStyle = NSMutableParagraphStyle()
@@ -204,7 +206,7 @@ class CMTextStyle {
         if (baseline == "Top") {
             println("baseline top bounds \(bounds)")
             CGPathAddRect(path, nil, bounds) // Draw normally (top)
-            backgroundBounds = CGRectMake(bounds.origin.x, bounds.origin.y + lineHeight, boundingBox.width, boundingBox.height + ascenderDelta)
+            backgroundBounds = CGRectMake(bounds.origin.x - borderPadding, bounds.origin.y + lineHeight - borderPadding, boundingBox.width + 2*borderPadding, boundingBox.height + ascenderDelta + 2*borderPadding)
         }
         else if (baseline == "Middle") {
             //Get the position on the y axis (middle)
@@ -213,7 +215,7 @@ class CMTextStyle {
             println("baseline middle midheight offset \(midHeight), bounds \(bounds) boundingBox \(boundingBox)")
             // - midHeight based on lower left origin
             CGPathAddRect(path, nil, CGRectMake(bounds.origin.x, bounds.origin.y - midHeight, bounds.width, bounds.height))
-            backgroundBounds = CGRectMake(bounds.origin.x, bounds.origin.y + lineHeight - midHeight, boundingBox.width, boundingBox.height + ascenderDelta)
+            backgroundBounds = CGRectMake(bounds.origin.x - borderPadding, bounds.origin.y + lineHeight - midHeight - borderPadding, boundingBox.width + 2*borderPadding, boundingBox.height + ascenderDelta + 2*borderPadding)
             baselineAdjust = -midHeight
         }
         else {
@@ -221,7 +223,7 @@ class CMTextStyle {
             println("baseline bottom bounds.height \(bounds.height) boundingBox.height \(boundingBox.height) bottomHeight offset \(bottomHeight)")
             // - bottomHeight based on lower left origin
             CGPathAddRect(path, nil, CGRectMake(bounds.origin.x, bounds.origin.y - bottomHeight, bounds.width, bounds.height));
-            backgroundBounds = CGRectMake(bounds.origin.x, bounds.origin.y + lineHeight - bottomHeight, boundingBox.width, boundingBox.height + ascenderDelta)
+            backgroundBounds = CGRectMake(bounds.origin.x - borderPadding, bounds.origin.y + lineHeight - bottomHeight - borderPadding, boundingBox.width + 2*borderPadding, boundingBox.height + ascenderDelta + 2*borderPadding)
             baselineAdjust = -bottomHeight
         }
 
@@ -575,7 +577,7 @@ class CMTextStyle {
                     var fontBoundingBox = CTFontGetBoundingBox(fontCT)
                     xOffset = fontBoundingBox.origin.x
                 }
-                let bounds = CGRectMake(point.x + lineOrigin.x, point.y + lineOrigin.y - descent + baselineAdjust, width, ascent + descent)
+                let bounds = CGRectMake(point.x + lineOrigin.x - borderPadding, point.y + lineOrigin.y - descent + baselineAdjust - borderPadding, width + 2*borderPadding, ascent + descent + 2*borderPadding)
                 
                 println("line \(index) point \(point) lineOrigin \(lineOrigin) xoffset \(xOffset) width \(width) descent \(descent)")
                 
@@ -603,8 +605,8 @@ class ViewController: UIViewController {
 
     required init(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
-        textStyle.setProperties("I am a meat popsicle, no really that is precisely what I am", targetFontSize: CGFloat(32))
-//        textStyle.setProperties("YO", targetFontSize: CGFloat(32))
+//        textStyle.setProperties("I am a meat popsicle, no really that is precisely what I am", targetFontSize: CGFloat(32))
+        textStyle.setProperties("YO", targetFontSize: CGFloat(32))
     }
     
     override func viewDidLoad() {
