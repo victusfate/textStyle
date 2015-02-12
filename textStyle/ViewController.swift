@@ -27,6 +27,8 @@ class CMTextStyle {
     var fontBoxWidth = TS_DEFAULT_WIDTH
     var fontBoxHeight = TS_DEFAULT_HEIGHT
     var boundingBox = CGRectMake(0, 0, TS_DEFAULT_WIDTH, TS_DEFAULT_HEIGHT)
+    var backgroundBounds = CGRectMake(0, 0, TS_DEFAULT_WIDTH, TS_DEFAULT_HEIGHT)
+    var baselineAdjust = CGFloat(0.0)
     var fullWidth = TS_DEFAULT_FULL_WIDTH
     var fullHeight = TS_DEFAULT_FULL_HEIGHT
     
@@ -34,6 +36,7 @@ class CMTextStyle {
     
     var fontUI : UIFont?
     var fontCT : CTFontRef?
+
     //    var lineSpacing = CGFloat(10)
     
     
@@ -94,7 +97,7 @@ class CMTextStyle {
             ascenderDelta = 0
         }
         else {
-            ascenderDelta = floor (0.2 * calcLineHeight + 0.5)
+            ascenderDelta = floor (0.25 * calcLineHeight + 0.5)
         }
         
         let defaultLineHeight = calcLineHeight + ascenderDelta
@@ -114,19 +117,19 @@ class CMTextStyle {
         //        font = CTFontCreateWithName(name: fontName, size: fontSize, matrix: UnsafePointer<CGAffineTransform>)
         // https://developer.apple.com/library/prerelease/ios/documentation/Carbon/Reference/CTFontRef/index.html
         fontCT = CTFontCreateWithName(font, fontSize, nil)
-        autoSizeEnabled = false
+        autoSizeEnabled = true
         align = "Center"
-        //        align = "Left"
-        //        align = "Right"
-        baseline = "Top"
-        //        baseline = "Bottom"
-        //        baseline = "Middle"
+        // align = "Left"
+        // align = "Right"
+//        baseline = "Top"
+         baseline = "Bottom"
+//        baseline = "Middle"
         borderPerLine = true
         
         borderLineWidth = CGFloat(4.0)
         borderColor    = UIColor(red: 0.0, green: 0.0, blue: 1.0, alpha: 1.0).CGColor
         backgroundColor = UIColor(red: 0.0, green: 1.0, blue: 0.0, alpha: 0.5).CGColor
-        shadowColor = UIColor(red: 0.4, green: 0.4, blue: 0.0, alpha: 1.0).CGColor
+        shadowColor = UIColor(red: 0.2, green: 0.2, blue: 0.0, alpha: 1.0).CGColor
         lineHeight = CGFloat(10)
         kerning = CGFloat(2.0)
         
@@ -179,7 +182,125 @@ class CMTextStyle {
         para.addAttribute(NSParagraphStyleAttributeName, value: paraStyle, range: NSRange(location: 0,length: para.length))
         
         //        let expectedLabelSize = (text + " attributed" + " strings.").sizeWithFont([UIFont fontWithName:@"Helvetica" size:14] constrainedToSize:CGSizeMake(MAXFLOAT, MAXFLOAT)];
+    
+    }
+    
+    func setPathBasedOnBaseline(bounds: CGRect) -> CGMutablePath {
+        let leading = floor( CTFontGetLeading(fontCT) + 0.5)
+        let ascent = floor( CTFontGetAscent(fontCT) + 0.5)
+        let descent = floor( CTFontGetDescent(fontCT) + 0.5)
+        var lineHeight = ascent + descent + leading
+        var ascenderDelta = CGFloat(0)
+        if leading > 0 {
+            ascenderDelta = 0
+        }
+        else {
+            ascenderDelta = floor( 0.25 * lineHeight + 0.5 )
+        }
+        lineHeight = lineHeight + ascenderDelta
         
+        
+        var path = CGPathCreateMutable()
+        if (baseline == "Top") {
+            println("baseline top bounds \(bounds)")
+            CGPathAddRect(path, nil, bounds) // Draw normally (top)
+            backgroundBounds = CGRectMake(bounds.origin.x, bounds.origin.y + lineHeight, boundingBox.width, boundingBox.height + ascenderDelta)
+        }
+        else if (baseline == "Middle") {
+            //Get the position on the y axis (middle)
+            var midHeight = bounds.height / 2.0
+            midHeight = midHeight - (boundingBox.height / 2.0)
+            println("baseline middle midheight offset \(midHeight), bounds \(bounds) boundingBox \(boundingBox)")
+            // - midHeight based on lower left origin
+            CGPathAddRect(path, nil, CGRectMake(bounds.origin.x, bounds.origin.y - midHeight, bounds.width, bounds.height))
+            backgroundBounds = CGRectMake(bounds.origin.x, bounds.origin.y + lineHeight - midHeight, boundingBox.width, boundingBox.height + ascenderDelta)
+            baselineAdjust = -midHeight
+        }
+        else {
+            let bottomHeight = bounds.height - boundingBox.height
+            println("baseline bottom bounds.height \(bounds.height) boundingBox.height \(boundingBox.height) bottomHeight offset \(bottomHeight)")
+            // - bottomHeight based on lower left origin
+            CGPathAddRect(path, nil, CGRectMake(bounds.origin.x, bounds.origin.y - bottomHeight, bounds.width, bounds.height));
+            backgroundBounds = CGRectMake(bounds.origin.x, bounds.origin.y + lineHeight - bottomHeight, boundingBox.width, boundingBox.height + ascenderDelta)
+            baselineAdjust = -bottomHeight
+        }
+
+        println("leading \(leading) ascent \(ascent) descent \(descent) lineHeight \(lineHeight) ascenderDelta \(ascenderDelta) backgroundBounds \(backgroundBounds)")
+        
+        return path
+    }
+    
+    func autoSize(rect: CGRect,options : NSStringDrawingOptions) {
+        
+//        let frame = CTFramesetterCreateFrame(frameSetter!,CFRangeMake(0, 0), rect, nil)
+//        let theSize = getTextSizeFromFrame(frame)
+        
+        
+        if rect.width > fontBoxWidth {
+            let scale = getScale(CGFloat(fontBoxWidth),v2: rect.width)
+            let newFontSize = scale * fontSize
+            println("1 updating with new font size \(newFontSize)")
+            self.setProperties(text,targetFontSize: newFontSize)
+            let rect2 = para.boundingRectWithSize(CGSizeMake(fontBoxWidth,10000), options:  options, context: nil)
+            println("rect2 \(rect) fontboxwidth,height \(fontBoxWidth) \(fontBoxHeight) rect width \(rect2.width) height \(rect2.height)")
+            boundingBox = rect2
+            if rect2.height > fontBoxHeight {
+                let scale2 = getScale(CGFloat(fontBoxHeight),v2: rect2.height)
+                let newFontSize = scale2 * fontSize
+                println("2 updating with new font size \(newFontSize)")
+                self.setProperties(text,targetFontSize: newFontSize)
+                let rect3 = para.boundingRectWithSize(CGSizeMake(fontBoxWidth,10000), options:  options, context: nil)
+                boundingBox = rect3
+                println("rect3 \(rect) fontboxwidth,height \(fontBoxWidth) \(fontBoxHeight) rect width \(rect3.width) height \(rect3.height)")
+            }
+        }
+        else if rect.height > fontBoxHeight {
+            let scale = getScale(CGFloat(fontBoxHeight), v2: rect.height)
+            let newFontSize = scale * fontSize
+            println("3 updating with new font size \(newFontSize)")
+            self.setProperties(text,targetFontSize: newFontSize)
+            let rect2 = para.boundingRectWithSize(CGSizeMake(fontBoxWidth,10000), options:  options, context: nil)
+            boundingBox = rect2
+            println("rect2 \(rect) fontboxwidth,height \(fontBoxWidth) \(fontBoxHeight) rect width \(rect2.width) height \(rect2.height)")
+            if rect2.width > fontBoxWidth {
+                let scale2 = getScale(CGFloat(fontBoxWidth), v2: rect2.width)
+                let newFontSize = scale2 * fontSize
+                println("4 updating with new font size \(newFontSize)")
+                self.setProperties(text,targetFontSize: newFontSize)
+                let rect3 = para.boundingRectWithSize(CGSizeMake(fontBoxWidth,10000), options:  options, context: nil)
+                boundingBox = rect3
+                println("rect3 \(rect) fontboxwidth,height \(fontBoxWidth) \(fontBoxHeight) rect width \(rect3.width) height \(rect3.height)")
+            }
+            
+        }
+        else {
+            // make it bigger
+//            let widthScale = getScale(CGFloat(fontBoxWidth), v2: rect.width)
+//            let heightScale = getScale(CGFloat(fontBoxHeight), v2: rect.height)
+            let widthScale = CGFloat(fontBoxWidth)/rect.width
+            let heightScale = CGFloat(fontBoxHeight)/rect.height
+            let scale = min(widthScale,heightScale) * 0.85
+            let newFontSize = scale * fontSize
+            println("5 updating with new font size \(newFontSize)")
+            self.setProperties(text,targetFontSize: newFontSize)
+            var rect5 = para.boundingRectWithSize(CGSizeMake(fontBoxWidth,10000), options:  options, context: nil)
+            boundingBox = CGRectMake(0,0,rect5.width + rect5.origin.x, rect5.height + rect5.origin.y)
+//            boundingBox = CGRectMake(0,0,fontBoxWidth,fontBoxHeight)
+            println("rect5 \(rect5) fontboxwidth,height \(fontBoxWidth) \(fontBoxHeight) using boundingbox \(boundingBox)")
+        }
+    }
+    
+    
+    func handleMaxTextLines(path: CGMutablePath) {
+        let framesetter = CTFramesetterCreateWithAttributedString(para)
+        //        let theSize = getTextSizeFromFrameSetter(framesetter)
+        //        println("the size after creating framesetter \(theSize) boundingBox \(boundingBox)")
+        
+        let frame = CTFramesetterCreateFrame(framesetter,CFRangeMake(0, 0), path, nil)
+        
+        // handle max lines here?
+        //        let lines = CTFrameGetLines(frame) as NSArray
+        //        let numLines = CFArrayGetCount(lines)
     }
     
     func drawText(point: CGPoint) -> CGImage {
@@ -265,56 +386,31 @@ class CMTextStyle {
         // height
         println("rect \(rect) fontboxwidth,height \(fontBoxWidth) \(fontBoxHeight) rect width \(rect.width) height \(rect.height)")
         
+        
+        // Handle autoSizing Text to fit a rectangle
+        // saw some tricks with UILabel to do this, set a huge font size and call adjustsFontSizeToFitWidth
+        // https://developer.apple.com/library/ios/documentation/UIKit/Reference/UILabel_Class/index.html#//apple_ref/occ/instp/UILabel/adjustsFontSizeToFitWidth
+        // but nothing equivalent for paragraph styles and CTFrames/core text
+        
         if autoSizeEnabled {
-            if rect.width > fontBoxWidth {
-                let scale = getScale(CGFloat(fontBoxWidth),v2: rect.width)
-                let newFontSize = scale * fontSize
-                println("1 updating with new font size \(newFontSize)")
-                self.setProperties(text,targetFontSize: newFontSize)
-                let rect2 = para.boundingRectWithSize(CGSizeMake(fontBoxWidth,10000), options:  options, context: nil)
-                println("rect2 \(rect) fontboxwidth,height \(fontBoxWidth) \(fontBoxHeight) rect width \(rect2.width) height \(rect2.height)")
-                boundingBox = rect2
-                if rect2.height > fontBoxHeight {
-                    let scale2 = getScale(CGFloat(fontBoxHeight),v2: rect2.height)
-                    let newFontSize = scale2 * fontSize
-                    println("2 updating with new font size \(newFontSize)")
-                    self.setProperties(text,targetFontSize: newFontSize)
-                    let rect3 = para.boundingRectWithSize(CGSizeMake(fontBoxWidth,10000), options:  options, context: nil)
-                    boundingBox = rect3
-                    println("rect3 \(rect) fontboxwidth,height \(fontBoxWidth) \(fontBoxHeight) rect width \(rect3.width) height \(rect3.height)")
-                }
-            }
-            else if rect.height > fontBoxHeight {
-                let scale = getScale(CGFloat(fontBoxHeight), v2: rect.height)
-                let newFontSize = scale * fontSize
-                println("3 updating with new font size \(newFontSize)")
-                self.setProperties(text,targetFontSize: newFontSize)
-                let rect2 = para.boundingRectWithSize(CGSizeMake(fontBoxWidth,10000), options:  options, context: nil)
-                boundingBox = rect2
-                println("rect2 \(rect) fontboxwidth,height \(fontBoxWidth) \(fontBoxHeight) rect width \(rect2.width) height \(rect2.height)")
-                if rect2.width > fontBoxWidth {
-                    let scale2 = getScale(CGFloat(fontBoxWidth), v2: rect2.width)
-                    let newFontSize = scale2 * fontSize
-                    println("4 updating with new font size \(newFontSize)")
-                    self.setProperties(text,targetFontSize: newFontSize)
-                    let rect3 = para.boundingRectWithSize(CGSizeMake(fontBoxWidth,10000), options:  options, context: nil)
-                    boundingBox = rect3
-                    println("rect3 \(rect) fontboxwidth,height \(fontBoxWidth) \(fontBoxHeight) rect width \(rect3.width) height \(rect3.height)")
-                }
-                
-            }
+            // handle maxlines here
+            
+            autoSize(rect, options: options)
+
         }
         else {
+            // handle max lines here
+            
             boundingBox = rect
-            // adjust fontBoxWidth/Height to rendered text
-            fontBoxWidth = rect.width
-            var fontBoundingBox = CTFontGetBoundingBox(fontCT)
-            //            fontBoxHeight = rect.height + fontBoundingBox.height
-            fontBoxHeight = rect.height + fontBoundingBox.height
-            //            fontBoxHeight = rect.height + boundingBox.origin.y - boundingBox.height
-            println("font bounding box \(fontBoundingBox), height \(fontBoundingBox.height) fontboxWidth \(fontBoxWidth) fontboxHeight \(fontBoxHeight)")
-            //            fontBoxHeight = rect.height - boundingBox.height // need to compensate for something off here
         }
+
+        // adjust fontBoxWidth/Height to rendered text
+        println("before fontBoxWidth \(fontBoxWidth) fontBoxHeight \(fontBoxHeight)")
+        fontBoxWidth = boundingBox.width
+        var fontBoundingBox = CTFontGetBoundingBox(fontCT)
+        fontBoxHeight = boundingBox.height + fontBoundingBox.height
+//        fontBoxHeight = boundingBox.height
+        println("after font bounding box \(fontBoundingBox), height \(fontBoundingBox.height) fontboxWidth \(fontBoxWidth) fontboxHeight \(fontBoxHeight)")
         
         CGContextSetInterpolationQuality(context, kCGInterpolationHigh)
         
@@ -329,31 +425,29 @@ class CMTextStyle {
         CGContextFillRect(context, fullRectangle)
         
         
-        let path = CGPathCreateMutable()
-        let leading = floor( CTFontGetLeading(fontCT) + 0.5)
-        let ascent = floor( CTFontGetAscent(fontCT) + 0.5)
-        let descent = floor( CTFontGetDescent(fontCT) + 0.5)
-        var lineHeight = ascent + descent + leading
-        var ascenderDelta = CGFloat(0)
-        if leading > 0 {
-            ascenderDelta = 0
-        }
-        else {
-            ascenderDelta = floor( 0.2 * lineHeight + 0.5 )
-        }
-        lineHeight = lineHeight + ascenderDelta
+//        let leading = floor( CTFontGetLeading(fontCT) + 0.5)
+//        let ascent = floor( CTFontGetAscent(fontCT) + 0.5)
+//        let descent = floor( CTFontGetDescent(fontCT) + 0.5)
+//        var lineHeight = ascent + descent + leading
+//        var ascenderDelta = CGFloat(0)
+//        if leading > 0 {
+//            ascenderDelta = 0
+//        }
+//        else {
+//            ascenderDelta = floor( 0.2 * lineHeight + 0.5 )
+//        }
+//        lineHeight = lineHeight + ascenderDelta
         
         let bounds = CGRectMake(point.x, point.y, fontBoxWidth, fontBoxHeight)
         
+        // text rendering time
+        let path = setPathBasedOnBaseline(bounds)
+
+        // text graphics if single box/outline
         if !borderPerLine {
-            //            let backgroundBounds = CGRectMake(point.x, point.y, fontBoxWidth, fontBoxHeight)
-            var backgroundBounds = CGRectMake(boundingBox.origin.x + point.x, boundingBox.origin.y + point.y + lineHeight, boundingBox.width, boundingBox.height + ascenderDelta)
-            //            backgroundBounds.origin.x += point.x
-            //            backgroundBounds.origin.y += point.y + lineHeight
-            //            backgroundBounds.height = backgroundBounds.height + ascenderDelta
-            println("leading \(leading) ascent \(ascent) descent \(descent) lineHeight \(lineHeight) ascenderDelta \(ascenderDelta) backgroundBounds \(backgroundBounds)")
-            //        CGContextAddRect(context, bounds)
-            //        CGContextStrokePath(context)
+//            backgroundBounds = CGRectMake(boundingBox.origin.x + point.x, boundingBox.origin.y + point.y + lineHeight, boundingBox.width, boundingBox.height + ascenderDelta)
+            //            var backgroundBounds = CGRectMake(bounds.origin.x, bounds.origin.y, bounds.width, bounds.height + ascenderDelta)
+//            println("leading \(leading) ascent \(ascent) descent \(descent) lineHeight \(lineHeight) ascenderDelta \(ascenderDelta) backgroundBounds \(backgroundBounds)")
             CGContextSetFillColorWithColor(context,backgroundColor)
             CGContextFillRect(context, backgroundBounds)
             
@@ -363,57 +457,24 @@ class CMTextStyle {
             CGContextSetStrokeColorWithColor(context, borderColor)
             CGContextSetLineWidth(context, borderLineWidth)
             CGContextStrokePath(context)
-        }
-        
-        // text rendering time
-        
-        // text vertical align, and horizontal align
-        //        CGRect boundingBox = CTFontGetBoundingBox(fontCT);
-        //
-        //        //Get the position on the y axis
-        //        float midHeight = self.frame.size.height / 2;
-        //        midHeight -= boundingBox.size.height / 2;
-        //
-        //        CGPathAddRect(path, NULL, CGRectMake(0, midHeight, self.frame.size.width, boundingBox.size.height));
-        
-        //        CGPathAddRect(path, nil, bounds)
-        if (baseline == "Top") {
-            println("baseline top bounds \(bounds)")
-            CGPathAddRect(path, nil, bounds) // Draw normally (top)
-        }
-        else if (baseline == "Middle") {
-            //Get the position on the y axis (middle)
-            var midHeight = bounds.height / 2.0
-            midHeight = midHeight - (boundingBox.height / 2.0)
-            println("baseline middle midheight offset \(midHeight), bounds \(bounds) boundingBox \(boundingBox)")
-            // - midHeight based on lower left origin
-            CGPathAddRect(path, nil, CGRectMake(bounds.origin.x, bounds.origin.y - midHeight, bounds.width, bounds.height))
-        }
-        else {
-            let bottomHeight = bounds.height - boundingBox.height
-            println("baseline bottom bounds.height \(bounds.height) boundingBox.height \(boundingBox.height) bottomHeight offset \(bottomHeight)")
-            // - bottomHeight based on lower left origin
-            CGPathAddRect(path, nil, CGRectMake(bounds.origin.x, bounds.origin.y - bottomHeight, bounds.width, bounds.height));
+            
         }
         
         // drop shadow
         CGContextSaveGState(context)
         CGContextSetShadowWithColor(context, CGSizeMake(shadowX, shadowY), shadowBlur, shadowColor)
-        
-        //rotate text
-        //        CGContextSetTextMatrix(context, CGAffineTransformMakeRotation( CGFloat(M_PI) ))
-        // Create the framesetter with the attributed string.
-        
+
+        // framesetter
         let framesetter = CTFramesetterCreateWithAttributedString(para)
-        //        let theSize = getTextSizeFromFrameSetter(framesetter)
-        //        println("the size after creating framesetter \(theSize) boundingBox \(boundingBox)")
-        
         let frame = CTFramesetterCreateFrame(framesetter,CFRangeMake(0, 0), path, nil)
         let theSize = getTextSizeFromFrame(frame)
         drawBackgroundPerLine(context,point: point, frame: frame)
         println("the size after creating frame \(theSize) boundingBox \(boundingBox)")
         
+        // render text
         CTFrameDraw(frame, context)
+
+        // return CGImage
         return CGBitmapContextCreateImage(context)
         
     }
@@ -500,7 +561,7 @@ class CMTextStyle {
                 ascenderDelta = 0
             }
             else {
-                ascenderDelta = floor( 0.2 * lineHeight + 0.5 )
+                ascenderDelta = floor( 0.25 * lineHeight + 0.5 )
             }
             lineHeight = lineHeight + ascenderDelta
             
@@ -514,7 +575,7 @@ class CMTextStyle {
                     var fontBoundingBox = CTFontGetBoundingBox(fontCT)
                     xOffset = fontBoundingBox.origin.x
                 }
-                let bounds = CGRectMake(point.x + lineOrigin.x, point.y + lineOrigin.y - descent, width, ascent + descent)
+                let bounds = CGRectMake(point.x + lineOrigin.x, point.y + lineOrigin.y - descent + baselineAdjust, width, ascent + descent)
                 
                 println("line \(index) point \(point) lineOrigin \(lineOrigin) xoffset \(xOffset) width \(width) descent \(descent)")
                 
@@ -543,12 +604,11 @@ class ViewController: UIViewController {
     required init(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
         textStyle.setProperties("I am a meat popsicle, no really that is precisely what I am", targetFontSize: CGFloat(32))
+//        textStyle.setProperties("YO", targetFontSize: CGFloat(32))
     }
     
     override func viewDidLoad() {
         super.viewDidLoad()
-
-//        drawTextToScreen("I am a meat popsicle, no really that is precisely what I am", point: CGPointMake(CGFloat(100),CGFloat(50)))
 
         textStyle.fullWidth = self.view.frame.width
         textStyle.fullHeight = self.view.frame.height
