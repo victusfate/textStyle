@@ -34,8 +34,9 @@ class CMTextStyle {
     
     var fontColorUI = UIColor(red: 1.0, green: 0, blue: 0, alpha: 1.0)
     
-    var fontUI : UIFont?
     var fontCT : CTFontRef?
+    let options : NSStringDrawingOptions = .UsesFontLeading | .UsesLineFragmentOrigin | .UsesDeviceMetrics
+    
 
     //    var lineSpacing = CGFloat(10)
     
@@ -44,8 +45,8 @@ class CMTextStyle {
     // full width and height will scale just fontsize properties, 1080p 1.0, 720p
     var align = "Center"   // "Left", "Center", "Right"
     var autoSizeEnabled = false
-    var autoSizeMax = 10 // scale factor to nominal font size
-    var autoSizeMin = 0.25
+    var autoSizeMax = CGFloat(10) // scale factor to nominal font size
+    var autoSizeMin = CGFloat(0.25)
     var backgroundColor = UIColor(red: 0.0, green: 1.0, blue: 0.0, alpha: 0.5).CGColor
     var baseline = "Top" // "Top", "Middle", "Bottom"
     var borderColor    = UIColor(red: 0.0, green: 0.0, blue: 1.0, alpha: 1.0).CGColor
@@ -71,13 +72,69 @@ class CMTextStyle {
     var shadowColor = UIColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 1.0).CGColor
     var shadowX = CGFloat(3.0)
     var shadowY = CGFloat(3.0)
-    var maxTextLines = 10
+    var maxTextLines = Int(2)
     var useLineHeight = false
     
     var para = NSMutableAttributedString()
+    
+    func naturalWrapText(text : String) -> String
+    {
+        // space delimit words into array
+        let wordsRaw = text.componentsSeparatedByString(" ")
+        var outWords = [String]()
+        
+        let NWords = wordsRaw.count
+        var nlines = Int( floor( sqrt(Double(NWords) )) )
+        if maxTextLines > 0 {
+            if nlines > maxTextLines {
+                nlines = maxTextLines
+            }
+        }
+        nlines = max(nlines,1)
+        
+        if nlines == 1 {
+            return text
+        }
+        else {
+            let targetWordsPerLine = Int( Double(NWords)/Double(nlines) + 0.5)
+            var iWord = 0
+            
+            for var iline=1;iline < nlines;iline++ {
+                
+                for var jWord=0;jWord < targetWordsPerLine;jWord++ {
+                    if wordsRaw.count > iWord {
+                        outWords.append(wordsRaw[iWord++])
+                    }
+                }
+                
+                if wordsRaw.count > iWord {
+                    if count(wordsRaw[iWord]) < 3 {
+                        outWords.append(wordsRaw[iWord++])
+                        outWords.append("\n")
+                    }
+                    else {
+                        outWords.append("\n")
+                    }
+                }
+            }
+            // add all remaining words
+            for var jWord=iWord;jWord < wordsRaw.count;jWord++ {
+                outWords.append(wordsRaw[jWord])
+            }
+        }
+        return " ".join(outWords)
+
+    }
 
     func getScale(v1: CGFloat, v2: CGFloat) -> CGFloat {
-        return sqrt(v1/v2)
+        var scale = sqrt(v1/v2)
+        if scale > autoSizeMax {
+            scale = autoSizeMax
+        }
+        if scale < autoSizeMin {
+            scale = autoSizeMin
+        }
+        return scale
     }
     
     func getLineHeight(font: CTFontRef) -> CGFloat {
@@ -104,68 +161,21 @@ class CMTextStyle {
         return defaultLineHeight
     }
     
-    func setProperties(inText: String, targetFontSize: CGFloat) {
-        text = inText
-        font = "Helvetica"
-        fontBoxWidth = CGFloat(200)
-        fontBoxHeight = CGFloat(200)
-        fontSize = targetFontSize
-        fontColorUI = UIColor(red: 1.0, green: 0, blue: 0, alpha: 1.0)
-        fontColor   = fontColorUI.CGColor
-        fontUI = UIFont(name: font, size: fontSize) ?? UIFont.systemFontOfSize(fontSize)
-        
-        //        font = CTFontCreateWithName(name: fontName, size: fontSize, matrix: UnsafePointer<CGAffineTransform>)
-        // https://developer.apple.com/library/prerelease/ios/documentation/Carbon/Reference/CTFontRef/index.html
-        fontCT = CTFontCreateWithName(font, fontSize, nil)
-        autoSizeEnabled = true
-        align = "Center"
-        // align = "Left"
-        // align = "Right"
-//        baseline = "Top"
-         baseline = "Bottom"
-//        baseline = "Middle"
-        borderPerLine = false
-        borderPadding = 6.0
-        
-        borderLineWidth = CGFloat(4.0)
-        borderColor    = UIColor(red: 0.0, green: 0.0, blue: 1.0, alpha: 1.0).CGColor
-        backgroundColor = UIColor(red: 0.0, green: 1.0, blue: 0.0, alpha: 0.5).CGColor
-        shadowColor = UIColor(red: 0.2, green: 0.2, blue: 0.0, alpha: 1.0).CGColor
-        lineHeight = CGFloat(60)
-        useLineHeight = true
-        kerning = CGFloat(2.0)
-        
-        let fontItal = CTFontCreateWithName("Georgia-Italic", fontSize, nil)
-        let fontBold = CTFontCreateWithName("Helvetica-Bold", fontSize, nil)
-        
-        //apply the current text style
+    func applyParagraphStyle(p : NSMutableAttributedString, mode : NSLineBreakMode) -> NSMutableAttributedString {
         let sKeyAttributeName : String = (kCTFontAttributeName as NSString) as String
         let sForegroundColorAttributeName : String = (kCTForegroundColorAttributeName as NSString) as String
         let sKerningName : String = (kCTKernAttributeName as NSString) as String
         var textFont = [ sKeyAttributeName: fontCT!,    sForegroundColorAttributeName: fontColor!]
-        var italFont = [ sKeyAttributeName: fontItal!,  sForegroundColorAttributeName: fontColor!]
-        var boldFont = [ sKeyAttributeName: fontBold!,  sForegroundColorAttributeName: fontColor!]
         if kerning > 0 {
             textFont = [ sKeyAttributeName: fontCT!,    sForegroundColorAttributeName: fontColor!, sKerningName: kerning ]
-            italFont = [ sKeyAttributeName: fontItal!,  sForegroundColorAttributeName: fontColor!, sKerningName: kerning]
-            boldFont = [ sKeyAttributeName: fontBold!,  sForegroundColorAttributeName: fontColor!, sKerningName: kerning]
         }
         
-        let attrString1 = NSAttributedString(string: text, attributes: textFont as [NSObject : AnyObject])
-//        let attrString2 = NSAttributedString(string: " attributed", attributes:italFont as [NSObject : AnyObject])
-//        let attrString3 = NSAttributedString(string: " strings.", attributes:boldFont as [NSObject : AnyObject])
-        
-        // Add locally formatted strings to paragraph
-        para = NSMutableAttributedString()
-        para.appendAttributedString(attrString1)
-//        para.appendAttributedString(attrString2)
-//        para.appendAttributedString(attrString3)
+        let attrString1 = NSMutableAttributedString(string: text, attributes: textFont as [NSObject : AnyObject])
         
         // Define paragraph styling
         let paraStyle = NSMutableParagraphStyle()
-        //        paraStyle.firstLineHeadIndent = 15.0
-        //        paraStyle.paragraphSpacingBefore = 10.0
-        paraStyle.lineBreakMode = NSLineBreakMode.ByWordWrapping
+        paraStyle.lineBreakMode = mode
+
         if useLineHeight {
             let lineSpacing = lineHeight - getLineHeight(fontCT!)
             paraStyle.lineSpacing = lineSpacing
@@ -179,12 +189,53 @@ class CMTextStyle {
         else { // default center
             paraStyle.alignment = NSTextAlignment.Center
         }
-        
-        // Apply paragraph styles to paragraph
-        para.addAttribute(NSParagraphStyleAttributeName, value: paraStyle, range: NSRange(location: 0,length: para.length))
-        
-        //        let expectedLabelSize = (text + " attributed" + " strings.").sizeWithFont([UIFont fontWithName:@"Helvetica" size:14] constrainedToSize:CGSizeMake(MAXFLOAT, MAXFLOAT)];
+        attrString1.addAttribute(NSParagraphStyleAttributeName, value: paraStyle, range: NSRange(location: 0,length: attrString1.length))
+
+        // Add locally formatted strings to paragraph
+        p.appendAttributedString(attrString1)
+        return p
+    }
     
+    func setProperties(inText: String, targetFontSize: CGFloat) {
+        
+//        text = naturalWrapText(inText)
+        text = inText
+        font = "Helvetica"
+        fontBoxWidth = CGFloat(200)
+        fontBoxHeight = CGFloat(200)
+        fontSize = targetFontSize
+        fontColorUI = UIColor(red: 1.0, green: 0, blue: 0, alpha: 1.0)
+        fontColor   = fontColorUI.CGColor
+//        fontUI = UIFont(name: font, size: fontSize) ?? UIFont.systemFontOfSize(fontSize)
+        
+        //        font = CTFontCreateWithName(name: fontName, size: fontSize, matrix: UnsafePointer<CGAffineTransform>)
+        // https://developer.apple.com/library/prerelease/ios/documentation/Carbon/Reference/CTFontRef/index.html
+        fontCT = CTFontCreateWithName(font, fontSize, nil)
+        
+        // need a CTFontCreateWithFile(), maybe http://stackoverflow.com/a/14048550/51700
+        // and a way to use italics if its available if italics is set for slant
+        // and to use weight if its set
+        
+        autoSizeEnabled = true
+        align = "Center"
+        // align = "Left"
+        // align = "Right"
+        baseline = "Top"
+//         baseline = "Bottom"
+//        baseline = "Middle"
+        borderPerLine = false
+        borderPadding = 6.0
+        
+        borderLineWidth = CGFloat(4.0)
+        borderColor    = UIColor(red: 0.0, green: 0.0, blue: 1.0, alpha: 1.0).CGColor
+        backgroundColor = UIColor(red: 0.0, green: 1.0, blue: 0.0, alpha: 0.5).CGColor
+        shadowColor = UIColor(red: 0.2, green: 0.2, blue: 0.0, alpha: 1.0).CGColor
+        lineHeight = CGFloat(60)
+        useLineHeight = false
+        kerning = CGFloat(2.0)
+        
+        para = NSMutableAttributedString()
+        para = applyParagraphStyle(para,mode: NSLineBreakMode.ByWordWrapping)
     }
     
     func setPathBasedOnBaseline(bounds: CGRect) -> CGMutablePath {
@@ -232,14 +283,16 @@ class CMTextStyle {
         return path
     }
     
-    func autoSize(rect: CGRect,options : NSStringDrawingOptions) {
+    func autoSize(rect: CGRect) {
         
 //        let frame = CTFramesetterCreateFrame(frameSetter!,CFRangeMake(0, 0), rect, nil)
 //        let theSize = getTextSizeFromFrame(frame)
         
+        println("fontbox width \(fontBoxWidth) height \(fontBoxHeight) rect \(rect)")
         
         if rect.width > fontBoxWidth {
-            let scale = getScale(CGFloat(fontBoxWidth),v2: rect.width)
+//            let scale = getScale(CGFloat(fontBoxWidth),v2: rect.width)
+            let scale = CGFloat(fontBoxWidth) / rect.width
             let newFontSize = scale * fontSize
             println("1 updating with new font size \(newFontSize)")
             self.setProperties(text,targetFontSize: newFontSize)
@@ -293,16 +346,28 @@ class CMTextStyle {
     }
     
     
-    func handleMaxTextLines(path: CGMutablePath) {
+    func handleMaxTextLines(point : CGPoint) {
+        let bounds = CGRectMake(point.x, point.y, fontBoxWidth, fontBoxHeight)
+        
+        // text rendering time
+        let path = setPathBasedOnBaseline(bounds)
         let framesetter = CTFramesetterCreateWithAttributedString(para)
         //        let theSize = getTextSizeFromFrameSetter(framesetter)
         //        println("the size after creating framesetter \(theSize) boundingBox \(boundingBox)")
         
         let frame = CTFramesetterCreateFrame(framesetter,CFRangeMake(0, 0), path, nil)
         
-        // handle max lines here?
-        //        let lines = CTFrameGetLines(frame) as NSArray
-        //        let numLines = CFArrayGetCount(lines)
+        // handle max lines here
+        let lines = CTFrameGetLines(frame) as NSArray
+        let numLines = CFArrayGetCount(lines)
+        if numLines > maxTextLines {
+            para = NSMutableAttributedString()
+            for var iline = 0;iline < maxTextLines - 1;iline++ {
+                // get text for each line textForLine
+                // para = applyParagraphStyle(textForLine,mode: NSLineBreakMode.ByClipping)
+            }
+            // para = applyParagraphStyle(textForLastLine,mode: NSLineBreakMode.ByTruncatingTail)
+        }
     }
     
     func drawText(point: CGPoint) -> CGImage {
@@ -383,7 +448,6 @@ class CMTextStyle {
         //        CGContextScaleCTM(context, 1.0, -1.0)
         
         
-        let options : NSStringDrawingOptions = .UsesFontLeading | .UsesLineFragmentOrigin | .UsesDeviceMetrics
         let rect = para.boundingRectWithSize(CGSizeMake(fontBoxWidth,10000), options:  options, context: nil)
         // height
         println("rect \(rect) fontboxwidth,height \(fontBoxWidth) \(fontBoxHeight) rect width \(rect.width) height \(rect.height)")
@@ -397,7 +461,7 @@ class CMTextStyle {
         if autoSizeEnabled {
             // handle maxlines here
             
-            autoSize(rect, options: options)
+            autoSize(rect)
 
         }
         else {
@@ -444,7 +508,6 @@ class CMTextStyle {
         
         // text rendering time
         let path = setPathBasedOnBaseline(bounds)
-
         // text graphics if single box/outline
         if !borderPerLine {
 //            backgroundBounds = CGRectMake(boundingBox.origin.x + point.x, boundingBox.origin.y + point.y + lineHeight, boundingBox.width, boundingBox.height + ascenderDelta)
@@ -605,8 +668,8 @@ class ViewController: UIViewController {
 
     required init(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
-//        textStyle.setProperties("I am a meat popsicle, no really that is precisely what I am", targetFontSize: CGFloat(32))
-        textStyle.setProperties("YO", targetFontSize: CGFloat(32))
+        textStyle.setProperties("I am a meat popsicle, no really that is precisely what I am", targetFontSize: CGFloat(32))
+//        textStyle.setProperties("YO", targetFontSize: CGFloat(32))
     }
     
     override func viewDidLoad() {
