@@ -21,6 +21,14 @@ let TS_DEFAULT_HEIGHT   = CGFloat(100)
 let TS_DEFAULT_FULL_WIDTH = CGFloat(1280)
 let TS_DEFAULT_FULL_HEIGHT = CGFloat(720)
 
+class CMFontProperties : NSObject {
+    var ascent = CGFloat(0)
+    var descent = CGFloat(0)
+    var leading = CGFloat(0)
+    var ascenderDelta = CGFloat(0)
+}
+
+
 class CMTextStyle {
     var text = ""
     
@@ -138,8 +146,9 @@ class CMTextStyle {
         }
         return scale
     }
-    
-    func getLineHeight(font: CTFontRef) -> CGFloat {
+
+    func getFontProperties(font: CTFontRef) -> CMFontProperties {
+        
         let ascent = CTFontGetAscent(font)
         let descent = CTFontGetDescent(font)
         var leading = CTFontGetLeading(font)
@@ -158,7 +167,25 @@ class CMTextStyle {
         else {
             ascenderDelta = floor (0.25 * calcLineHeight + 0.5)
         }
+        var fontProperties = CMFontProperties()
+        fontProperties.ascent = ascent
+        fontProperties.descent = descent
+        fontProperties.leading = leading
+        fontProperties.ascenderDelta = ascenderDelta
         
+        return fontProperties
+    }
+    
+    func getLineHeight(font: CTFontRef) -> CGFloat {
+        let fontProperties = getFontProperties(font)
+        
+        let ascent = fontProperties.ascent
+        let descent = fontProperties.descent
+        var leading = fontProperties.leading
+        
+        let calcLineHeight = floor (ascent + 0.5) + floor (descent + 0.5) + leading;
+        
+        var ascenderDelta = fontProperties.ascenderDelta
         let defaultLineHeight = calcLineHeight + ascenderDelta
         return defaultLineHeight
     }
@@ -284,7 +311,7 @@ class CMTextStyle {
         fontCT = CTFontCreateCopyWithSymbolicTraits(basefontCT!, CGFloat(0.0), nil, fontTraits, fontTraits)
         
         
-        autoSizeEnabled = false
+        autoSizeEnabled = true
         align = "Center"
         // align = "Left"
         // align = "Right"
@@ -316,10 +343,11 @@ class CMTextStyle {
         }
         */
 //        para = applyParagraphStyle(para,inText: text, mode: NSLineBreakMode.ByTruncatingTail)
+        // this updates the computed lineHeight if useLineHeight is false
         para = applyParagraphStyle(para,inText: text, mode: NSLineBreakMode.ByWordWrapping)
     }
     
-    func setPathBasedOnBaseline(bounds: CGRect) -> CGMutablePath {
+    func setPathBasedOnBaseline(textBounds: CGRect, containerBounds: CGRect) -> CGMutablePath {
         let leading = floor( CTFontGetLeading(fontCT) + 0.5)
         let ascent = floor( CTFontGetAscent(fontCT) + 0.5)
         let descent = floor( CTFontGetDescent(fontCT) + 0.5)
@@ -336,29 +364,29 @@ class CMTextStyle {
         
         var path = CGPathCreateMutable()
         if (baseline == "Top") {
-            println("baseline top bounds \(bounds)")
-            CGPathAddRect(path, nil, bounds) // Draw normally (top)
-//            backgroundBounds = CGRectMake(bounds.origin.x - borderPadding, bounds.origin.y + lineHeight - borderPadding, boundingBox.width + 2*borderPadding, boundingBox.height + ascenderDelta + 2*borderPadding)
-            backgroundBounds = CGRectMake(bounds.origin.x - borderPadding, bounds.origin.y - borderPadding, bounds.width + 2*borderPadding, bounds.height + 2*borderPadding)
+            println("baseline top bounds \(textBounds)")
+            CGPathAddRect(path, nil, textBounds) // Draw normally (top)
+//            backgroundBounds = CGRectMake(textBounds.origin.x - borderPadding, textBounds.origin.y + lineHeight - borderPadding, containerBounds.width + 2*borderPadding, containerBounds.height + ascenderDelta + 2*borderPadding)
+            backgroundBounds = CGRectMake(textBounds.origin.x - borderPadding, textBounds.origin.y - borderPadding, textBounds.width + 2*borderPadding, textBounds.height + 2*borderPadding)
         }
         else if (baseline == "Middle") {
             //Get the position on the y axis (middle)
-            var midHeight = bounds.height / 2.0
-            midHeight = midHeight - (boundingBox.height / 2.0)
-            println("baseline middle midheight offset \(midHeight), bounds \(bounds) boundingBox \(boundingBox)")
+            var midHeight = textBounds.height / 2.0
+            midHeight = midHeight - (containerBounds.height / 2.0)
+            println("baseline middle midheight offset \(midHeight), text bounds \(textBounds) container \(containerBounds)")
             // - midHeight based on lower left origin
-            CGPathAddRect(path, nil, CGRectMake(bounds.origin.x, bounds.origin.y - midHeight, bounds.width, bounds.height))
-//            backgroundBounds = CGRectMake(bounds.origin.x - borderPadding, bounds.origin.y + lineHeight - midHeight - borderPadding, boundingBox.width + 2*borderPadding, boundingBox.height + ascenderDelta + 2*borderPadding)
-            backgroundBounds = CGRectMake(bounds.origin.x - borderPadding, bounds.origin.y - midHeight - borderPadding, bounds.width + 2*borderPadding, bounds.height + 2*borderPadding)
+            CGPathAddRect(path, nil, CGRectMake(textBounds.origin.x, textBounds.origin.y - midHeight, textBounds.width, textBounds.height))
+//            backgroundBounds = CGRectMake(textBounds.origin.x - borderPadding, textBounds.origin.y + lineHeight - midHeight - borderPadding, containerBounds.width + 2*borderPadding, containerBounds.height + ascenderDelta + 2*borderPadding)
+            backgroundBounds = CGRectMake(textBounds.origin.x - borderPadding, textBounds.origin.y - midHeight - borderPadding, textBounds.width + 2*borderPadding, textBounds.height + 2*borderPadding)
             baselineAdjust = -midHeight
         }
         else {
-            let bottomHeight = bounds.height - boundingBox.height
-            println("baseline bottom bounds.height \(bounds.height) boundingBox.height \(boundingBox.height) bottomHeight offset \(bottomHeight)")
+            let bottomHeight = textBounds.height - containerBounds.height
+            println("baseline bottom text bounds.height \(textBounds.height) container.height \(containerBounds.height) bottomHeight offset \(bottomHeight)")
             // - bottomHeight based on lower left origin
-            CGPathAddRect(path, nil, CGRectMake(bounds.origin.x, bounds.origin.y - bottomHeight, bounds.width, bounds.height));
-//            backgroundBounds = CGRectMake(bounds.origin.x - borderPadding, bounds.origin.y + lineHeight - bottomHeight - borderPadding, boundingBox.width + 2*borderPadding, boundingBox.height + ascenderDelta + 2*borderPadding)
-            backgroundBounds = CGRectMake(bounds.origin.x - borderPadding, bounds.origin.y - bottomHeight - borderPadding, bounds.width + 2*borderPadding, bounds.height + 2*borderPadding)
+            CGPathAddRect(path, nil, CGRectMake(textBounds.origin.x, textBounds.origin.y - bottomHeight, textBounds.width, textBounds.height));
+//            backgroundBounds = CGRectMake(textBounds.origin.x - borderPadding, textBounds.origin.y + lineHeight - bottomHeight - borderPadding, containerBounds.width + 2*borderPadding, containerBounds.height + ascenderDelta + 2*borderPadding)
+            backgroundBounds = CGRectMake(textBounds.origin.x - borderPadding, textBounds.origin.y - bottomHeight - borderPadding, textBounds.width + 2*borderPadding, textBounds.height + 2*borderPadding)
             baselineAdjust = -bottomHeight
         }
 
@@ -374,58 +402,71 @@ class CMTextStyle {
         
         println("fontbox width \(fontBoxWidth) height \(fontBoxHeight) rect \(rect)")
         
-        if rect.width > fontBoxWidth {
-//            let scale = getScale(CGFloat(fontBoxWidth),v2: rect.width)
-            let scale = CGFloat(fontBoxWidth) / rect.width
+        let clipHeight = CGFloat(maxTextLines) * lineHeight
+        if rect.height > clipHeight {
+            boundingBox = CGRectMake(boundingBox.origin.x,boundingBox.origin.y,boundingBox.width,clipHeight)
+            let scale = getScale(CGFloat(clipHeight),v2: rect.height)
             let newFontSize = scale * fontSize
-            println("1 updating with new font size \(newFontSize)")
+            println("clip check updating with new font size \(newFontSize)")
             self.setProperties(text,targetFontSize: newFontSize)
             let rect2 = para.boundingRectWithSize(CGSizeMake(fontBoxWidth,10000), options:  options, context: nil)
-            println("rect2 \(rect) fontboxwidth,height \(fontBoxWidth) \(fontBoxHeight) rect width \(rect2.width) height \(rect2.height)")
+            println("clip check rect2 \(rect) fontboxwidth,height \(fontBoxWidth) \(fontBoxHeight) rect width \(rect2.width) height \(rect2.height)")
             boundingBox = rect2
-            if rect2.height > fontBoxHeight {
-                let scale2 = getScale(CGFloat(fontBoxHeight),v2: rect2.height)
-                let newFontSize = scale2 * fontSize
-                println("2 updating with new font size \(newFontSize)")
-                self.setProperties(text,targetFontSize: newFontSize)
-                let rect3 = para.boundingRectWithSize(CGSizeMake(fontBoxWidth,10000), options:  options, context: nil)
-                boundingBox = rect3
-                println("rect3 \(rect) fontboxwidth,height \(fontBoxWidth) \(fontBoxHeight) rect width \(rect3.width) height \(rect3.height)")
-            }
-        }
-        else if rect.height > fontBoxHeight {
-            let scale = getScale(CGFloat(fontBoxHeight), v2: rect.height)
-            let newFontSize = scale * fontSize
-            println("3 updating with new font size \(newFontSize)")
-            self.setProperties(text,targetFontSize: newFontSize)
-            let rect2 = para.boundingRectWithSize(CGSizeMake(fontBoxWidth,10000), options:  options, context: nil)
-            boundingBox = rect2
-            println("rect2 \(rect) fontboxwidth,height \(fontBoxWidth) \(fontBoxHeight) rect width \(rect2.width) height \(rect2.height)")
-            if rect2.width > fontBoxWidth {
-                let scale2 = getScale(CGFloat(fontBoxWidth), v2: rect2.width)
-                let newFontSize = scale2 * fontSize
-                println("4 updating with new font size \(newFontSize)")
-                self.setProperties(text,targetFontSize: newFontSize)
-                let rect3 = para.boundingRectWithSize(CGSizeMake(fontBoxWidth,10000), options:  options, context: nil)
-                boundingBox = rect3
-                println("rect3 \(rect) fontboxwidth,height \(fontBoxWidth) \(fontBoxHeight) rect width \(rect3.width) height \(rect3.height)")
-            }
-            
         }
         else {
-            // make it bigger
-//            let widthScale = getScale(CGFloat(fontBoxWidth), v2: rect.width)
-//            let heightScale = getScale(CGFloat(fontBoxHeight), v2: rect.height)
-            let widthScale = CGFloat(fontBoxWidth)/rect.width
-            let heightScale = CGFloat(fontBoxHeight)/rect.height
-            let scale = min(widthScale,heightScale) * 0.85
-            let newFontSize = scale * fontSize
-            println("5 updating with new font size \(newFontSize)")
-            self.setProperties(text,targetFontSize: newFontSize)
-            var rect5 = para.boundingRectWithSize(CGSizeMake(fontBoxWidth,10000), options:  options, context: nil)
-            boundingBox = CGRectMake(0,0,rect5.width + rect5.origin.x, rect5.height + rect5.origin.y)
-//            boundingBox = CGRectMake(0,0,fontBoxWidth,fontBoxHeight)
-            println("rect5 \(rect5) fontboxwidth,height \(fontBoxWidth) \(fontBoxHeight) using boundingbox \(boundingBox)")
+            if rect.width > fontBoxWidth {
+                let scale = getScale(CGFloat(fontBoxWidth),v2: rect.width)
+    //            let scale = CGFloat(fontBoxWidth) / rect.width
+                let newFontSize = scale * fontSize
+                println("1 updating with new font size \(newFontSize)")
+                self.setProperties(text,targetFontSize: newFontSize)
+                let rect2 = para.boundingRectWithSize(CGSizeMake(fontBoxWidth,10000), options:  options, context: nil)
+                println("rect2 \(rect) fontboxwidth,height \(fontBoxWidth) \(fontBoxHeight) rect width \(rect2.width) height \(rect2.height)")
+                boundingBox = rect2
+                if rect2.height > fontBoxHeight {
+                    let scale2 = getScale(CGFloat(fontBoxHeight),v2: rect2.height)
+                    let newFontSize = scale2 * fontSize
+                    println("2 updating with new font size \(newFontSize)")
+                    self.setProperties(text,targetFontSize: newFontSize)
+                    let rect3 = para.boundingRectWithSize(CGSizeMake(fontBoxWidth,10000), options:  options, context: nil)
+                    boundingBox = rect3
+                    println("rect3 \(rect) fontboxwidth,height \(fontBoxWidth) \(fontBoxHeight) rect width \(rect3.width) height \(rect3.height)")
+                }
+            }
+            else if rect.height > fontBoxHeight {
+                let scale = getScale(CGFloat(fontBoxHeight), v2: rect.height)
+                let newFontSize = scale * fontSize
+                println("3 updating with new font size \(newFontSize)")
+                self.setProperties(text,targetFontSize: newFontSize)
+                let rect2 = para.boundingRectWithSize(CGSizeMake(fontBoxWidth,10000), options:  options, context: nil)
+                boundingBox = rect2
+                println("rect2 \(rect) fontboxwidth,height \(fontBoxWidth) \(fontBoxHeight) rect width \(rect2.width) height \(rect2.height)")
+                if rect2.width > fontBoxWidth {
+                    let scale2 = getScale(CGFloat(fontBoxWidth), v2: rect2.width)
+                    let newFontSize = scale2 * fontSize
+                    println("4 updating with new font size \(newFontSize)")
+                    self.setProperties(text,targetFontSize: newFontSize)
+                    let rect3 = para.boundingRectWithSize(CGSizeMake(fontBoxWidth,10000), options:  options, context: nil)
+                    boundingBox = rect3
+                    println("rect3 \(rect) fontboxwidth,height \(fontBoxWidth) \(fontBoxHeight) rect width \(rect3.width) height \(rect3.height)")
+                }
+                
+            }
+            else {
+                // make it bigger
+    //            let widthScale = getScale(CGFloat(fontBoxWidth), v2: rect.width)
+    //            let heightScale = getScale(CGFloat(fontBoxHeight), v2: rect.height)
+                let widthScale = CGFloat(fontBoxWidth)/rect.width
+                let heightScale = CGFloat(fontBoxHeight)/rect.height
+                let scale = min(widthScale,heightScale) * 0.85
+                let newFontSize = scale * fontSize
+                println("5 updating with new font size \(newFontSize)")
+                self.setProperties(text,targetFontSize: newFontSize)
+                var rect5 = para.boundingRectWithSize(CGSizeMake(fontBoxWidth,10000), options:  options, context: nil)
+                boundingBox = CGRectMake(0,0,rect5.width + rect5.origin.x, rect5.height + rect5.origin.y)
+    //            boundingBox = CGRectMake(0,0,fontBoxWidth,fontBoxHeight)
+                println("rect5 \(rect5) fontboxwidth,height \(fontBoxWidth) \(fontBoxHeight) using container bounds \(boundingBox)")
+            }
         }
     }
     
@@ -514,7 +555,7 @@ class CMTextStyle {
         
 
 
-        var fontBoundingBox = CTFontGetBoundingBox(fontCT)
+
         
         // Handle autoSizing Text to fit a rectangle
         // saw some tricks with UILabel to do this, set a huge font size and call adjustsFontSizeToFitWidth
@@ -522,28 +563,33 @@ class CMTextStyle {
         // but nothing equivalent for paragraph styles and CTFrames/core text
         
         if autoSizeEnabled {
-            // handle maxlines here
-            
             autoSize(rect)
+            // handle max lines
+            let clipHeight = CGFloat(maxTextLines) * lineHeight
+            if boundingBox.height > clipHeight {
+                boundingBox = CGRectMake(boundingBox.origin.x,boundingBox.origin.y,boundingBox.width,clipHeight)
+            }
 
         }
         else {
             // handle max lines here
-            /*
             let clipHeight = CGFloat(maxTextLines) * lineHeight
             if rect.height > clipHeight {
-//                rect = CGRectMake(rect.origin.x,rect.origin.y,rect.width,clipHeight - fontBoundingBox.height)
                 rect = CGRectMake(rect.origin.x,rect.origin.y,rect.width,clipHeight)
             }
-            */
             boundingBox = rect
         }
+        var fontBoundingBox = CTFontGetBoundingBox(fontCT)
+        let fontProperties = getFontProperties(fontCT!)
+//        boundingBox = CGRectMake(boundingBox.origin.x,boundingBox.origin.y, boundingBox.width, boundingBox.height + fontProperties.ascenderDelta)
+        boundingBox = CGRectMake(boundingBox.origin.x,boundingBox.origin.y, boundingBox.width, boundingBox.height + fontBoundingBox.height * 0.25)
 
         // adjust fontBoxWidth/Height to rendered text
         println("before fontBoxWidth \(fontBoxWidth) fontBoxHeight \(fontBoxHeight)")
         fontBoxWidth = boundingBox.width
-        fontBoxHeight = boundingBox.height + lineHeight // gotta get this right
-//        fontBoxHeight = boundingBox.height
+        fontBoxHeight = boundingBox.height // gotta get this right
+//        fontBoxHeight = boundingBox.height + lineHeight
+//        fontBoxHeight = boundingBox.height + fontBoundingBox.height
 
         println("after font bounding box \(fontBoundingBox), height \(fontBoundingBox.height) fontboxWidth \(fontBoxWidth) fontboxHeight \(fontBoxHeight)")
         
@@ -562,7 +608,7 @@ class CMTextStyle {
         let bounds = CGRectMake(point.x, point.y, fontBoxWidth, fontBoxHeight)
         
         // text rendering time
-        let path = setPathBasedOnBaseline(bounds)
+        let path = setPathBasedOnBaseline(bounds,containerBounds: boundingBox)
         // text graphics if single box/outline
         if !borderPerLine {
 //            backgroundBounds = CGRectMake(boundingBox.origin.x + point.x, boundingBox.origin.y + point.y + lineHeight, boundingBox.width, boundingBox.height + ascenderDelta)
