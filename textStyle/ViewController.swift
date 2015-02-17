@@ -37,9 +37,8 @@ class CMTextStyle {
     var fontCT : CTFontRef?
     let options : NSStringDrawingOptions = .UsesFontLeading | .UsesLineFragmentOrigin | .UsesDeviceMetrics
     
-
-    //    var lineSpacing = CGFloat(10)
-    
+    var fontFileBase = ""
+    var fontFileExtension = "ttf"
     
     // all properties, see oFontProperties.json in cameo-montage-script
     // full width and height will scale just fontsize properties, 1080p 1.0, 720p
@@ -198,23 +197,62 @@ class CMTextStyle {
     
     func setProperties(inText: String, targetFontSize: CGFloat) {
         
+        // TBD check memory usage over time
+        // http://stackoverflow.com/questions/8491841/memory-usage-grows-with-ctfontcreatewithname-and-ctframesetterref
+        
 //        text = naturalWrapText(inText)
         text = inText
-        font = "Helvetica"
+        
+        // case handling
+        if capsAll {
+            text = inText.uppercaseString
+        }
+        else if capsLower {
+            text = inText.lowercaseString
+        }
+        else if capsFirst {
+            text = inText.substringToIndex(advance(inText.startIndex, 1)).uppercaseString + inText.substringFromIndex(advance(inText.startIndex,1)).lowercaseString
+        }
+        else {
+            text = inText
+        }
+        
+        font = "MuseoSans"
+        fontFileBase = "MuseoSans-900"
+//        font = "Georgia Italic"
+//        fontFileBase = "Georgia Italic"
+        fontFileExtension = "ttf"
         fontBoxWidth = CGFloat(200)
         fontBoxHeight = CGFloat(200)
         fontSize = targetFontSize
         fontColorUI = UIColor(red: 1.0, green: 0, blue: 0, alpha: 1.0)
         fontColor   = fontColorUI.CGColor
-//        fontUI = UIFont(name: font, size: fontSize) ?? UIFont.systemFontOfSize(fontSize)
+
         
-        //        font = CTFontCreateWithName(name: fontName, size: fontSize, matrix: UnsafePointer<CGAffineTransform>)
-        // https://developer.apple.com/library/prerelease/ios/documentation/Carbon/Reference/CTFontRef/index.html
-        fontCT = CTFontCreateWithName(font, fontSize, nil)
         
-        // need a CTFontCreateWithFile(), maybe http://stackoverflow.com/a/14048550/51700
+        // need a CTFontCreateWithFile(), maybe https://developer.apple.com/library/mac/documentation/Carbon/Reference/CoreText_FontManager_Ref/index.html#//apple_ref/c/func/CTFontManagerIsSupportedFontFile
         // and a way to use italics if its available if italics is set for slant
         // and to use weight if its set
+        
+        if count(fontFileBase) > 0 {
+            let fontURL = NSBundle.mainBundle().URLForResource(fontFileBase, withExtension: fontFileExtension)
+            
+            // couldn't find this via swift, checking error instead CTFontManagerIsSupportedFont( fontURL )
+            // alternative loading method 
+            // CTFontManagerCreateFontDescriptorsFromURL(_ fileURL: CFURL!) -> CFArray!
+
+            var error : Unmanaged<CFErrorRef>? = nil
+            CTFontManagerRegisterFontsForURL(fontURL, CTFontManagerScope.Process, &error)
+            if error != nil {
+//                assert(false, "error loading font file \(fontFileBase) url \(fontURL), error \(error) ")
+                println("error loading font file \(fontFileBase) url \(fontURL), error \(error?.takeRetainedValue())")
+                font = "Helvetica"
+            }
+        }
+        // https://developer.apple.com/library/prerelease/ios/documentation/Carbon/Reference/CTFontRef/index.html
+        fontCT = CTFontCreateWithName(font, fontSize, nil)
+
+        
         
         autoSizeEnabled = true
         align = "Center"
@@ -668,7 +706,7 @@ class ViewController: UIViewController {
 
     required init(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
-        textStyle.setProperties("I am a meat popsicle, no really that is precisely what I am", targetFontSize: CGFloat(32))
+        textStyle.setProperties("i am a meat popsicle, NO really that is precisely what I am", targetFontSize: CGFloat(32))
 //        textStyle.setProperties("YO", targetFontSize: CGFloat(32))
     }
     

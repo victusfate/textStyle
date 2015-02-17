@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		9B6C13061A938CFC00AD0319 /* Georgia Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 9B6C13041A938CFC00AD0319 /* Georgia Italic.ttf */; };
+		9B6C13071A938CFC00AD0319 /* MuseoSans-900.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 9B6C13051A938CFC00AD0319 /* MuseoSans-900.ttf */; };
 		9BAE901E1A83C82B005AF095 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BAE901D1A83C82B005AF095 /* AppDelegate.swift */; };
 		9BAE90201A83C82B005AF095 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BAE901F1A83C82B005AF095 /* ViewController.swift */; };
 		9BAE90231A83C82B005AF095 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 9BAE90211A83C82B005AF095 /* Main.storyboard */; };
@@ -26,6 +28,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		9B6C13041A938CFC00AD0319 /* Georgia Italic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Georgia Italic.ttf"; sourceTree = "<group>"; };
+		9B6C13051A938CFC00AD0319 /* MuseoSans-900.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "MuseoSans-900.ttf"; sourceTree = "<group>"; };
 		9BAE90181A83C82B005AF095 /* textStyle.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = textStyle.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9BAE901C1A83C82B005AF095 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		9BAE901D1A83C82B005AF095 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -56,9 +60,19 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		9B6C13031A938CFC00AD0319 /* fonts */ = {
+			isa = PBXGroup;
+			children = (
+				9B6C13041A938CFC00AD0319 /* Georgia Italic.ttf */,
+				9B6C13051A938CFC00AD0319 /* MuseoSans-900.ttf */,
+			);
+			path = fonts;
+			sourceTree = "<group>";
+		};
 		9BAE900F1A83C82A005AF095 = {
 			isa = PBXGroup;
 			children = (
+				9B6C13031A938CFC00AD0319 /* fonts */,
 				9BAE901A1A83C82B005AF095 /* textStyle */,
 				9BAE90301A83C82B005AF095 /* textStyleTests */,
 				9BAE90191A83C82B005AF095 /* Products */,
@@ -195,6 +209,8 @@
 			files = (
 				9BAE90231A83C82B005AF095 /* Main.storyboard in Resources */,
 				9BAE90281A83C82B005AF095 /* LaunchScreen.xib in Resources */,
+				9B6C13061A938CFC00AD0319 /* Georgia Italic.ttf in Resources */,
+				9B6C13071A938CFC00AD0319 /* MuseoSans-900.ttf in Resources */,
 				9BAE90251A83C82B005AF095 /* Images.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
