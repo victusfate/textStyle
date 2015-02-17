@@ -34,7 +34,9 @@ class CMTextStyle {
     
     var fontColorUI = UIColor(red: 1.0, green: 0, blue: 0, alpha: 1.0)
     
-    var fontCT : CTFontRef?
+    var basefontCT : CTFontRef?
+    var fontCT : CTFontRef? // used CTFont with traits set
+    
     let options : NSStringDrawingOptions = .UsesFontLeading | .UsesLineFragmentOrigin | .UsesDeviceMetrics
     
     var fontFileBase = ""
@@ -217,8 +219,10 @@ class CMTextStyle {
             text = inText
         }
         
-        font = "MuseoSans"
-        fontFileBase = "MuseoSans-900"
+        font = "Helvetica"
+        fontFileBase = ""
+//        font = "MuseoSans-900"
+//        fontFileBase = "MuseoSans-900"
 //        font = "Georgia Italic"
 //        fontFileBase = "Georgia Italic"
         fontFileExtension = "ttf"
@@ -238,19 +242,41 @@ class CMTextStyle {
             let fontURL = NSBundle.mainBundle().URLForResource(fontFileBase, withExtension: fontFileExtension)
             
             // couldn't find this via swift, checking error instead CTFontManagerIsSupportedFont( fontURL )
-            // alternative loading method 
-            // CTFontManagerCreateFontDescriptorsFromURL(_ fileURL: CFURL!) -> CFArray!
 
-            var error : Unmanaged<CFErrorRef>? = nil
-            CTFontManagerRegisterFontsForURL(fontURL, CTFontManagerScope.Process, &error)
-            if error != nil {
-//                assert(false, "error loading font file \(fontFileBase) url \(fontURL), error \(error) ")
-                println("error loading font file \(fontFileBase) url \(fontURL), error \(error?.takeRetainedValue())")
-                font = "Helvetica"
+            let descriptors : Array = CTFontManagerCreateFontDescriptorsFromURL(fontURL)! as Array
+            for desc in descriptors {
+                basefontCT = CTFontCreateWithFontDescriptor(desc as! CTFontDescriptor, fontSize, nil)
+                font = CTFontCopyFullName(basefontCT) as! String
+                println("loading font \(font) from file")
+                break;
             }
+
+            // alternative method, wasn't error checking properly
+//            var error : Unmanaged<CFErrorRef>? = nil
+//            CTFontManagerRegisterFontsForURL(fontURL, CTFontManagerScope.Process, &error)
+//            if error != nil {
+////                assert(false, "error loading font file \(fontFileBase) url \(fontURL), error \(error) ")
+//                println("error loading font file \(fontFileBase) url \(fontURL), error \(error?.takeRetainedValue())")
+//                font = "Helvetica"
+//            }
         }
         // https://developer.apple.com/library/prerelease/ios/documentation/Carbon/Reference/CTFontRef/index.html
-        fontCT = CTFontCreateWithName(font, fontSize, nil)
+        basefontCT = CTFontCreateWithName(font, fontSize, nil)
+        /*
+        if fontSlant == "Italics" && fontWeight == "Normal" {
+            fontCT = CTFontCreateCopyWithSymbolicTraits(basefontCT!, 0.0, nil, kCTFontSlantTrait, CTFontSymbolicTraits.ItalicTrait)
+        }
+        else if fontSlant == "Italics" && fontWeight == "Bold" {
+            fontCT = CTFontCreateCopyWithSymbolicTraits(basefontCT!, 0.0, nil, kCTFontSlantTrait, CTFontSymbolicTraits.ItalicTrait | CTFontSymbolicTraits.BoldTrait)
+        }
+        else if fontSlant == "Normal" && fontWeight == "Bold" {
+            fontCT = CTFontCreateCopyWithSymbolicTraits(basefontCT!, 0.0, nil, kCTFontWeightTrait, CTFontSymbolicTraits.BoldTrait)
+        }
+        else { // if fontSlant == "Normal" && fontWeight == "Normal"
+            fontCT = basefontCT
+        }
+        */
+        fontCT = basefontCT
 
         
         
