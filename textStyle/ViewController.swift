@@ -311,13 +311,13 @@ class CMTextStyle {
         fontCT = CTFontCreateCopyWithSymbolicTraits(basefontCT!, CGFloat(0.0), nil, fontTraits, fontTraits)
         
         
-        autoSizeEnabled = true
+        autoSizeEnabled = false
         align = "Center"
         // align = "Left"
         // align = "Right"
-        baseline = "Top"
+//        baseline = "Top"
 //         baseline = "Bottom"
-//        baseline = "Middle"
+        baseline = "Middle"
         borderPerLine = false
         borderPadding = 0.0
         
