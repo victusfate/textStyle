@@ -219,10 +219,10 @@ class CMTextStyle {
             text = inText
         }
         
-        font = "Helvetica"
-        fontFileBase = ""
-//        font = "MuseoSans-900"
-//        fontFileBase = "MuseoSans-900"
+//        font = "Helvetica"
+//        fontFileBase = ""
+        font = "MuseoSans-900"
+        fontFileBase = "MuseoSans-900"
 //        font = "Georgia Italic"
 //        fontFileBase = "Georgia Italic"
         fontFileExtension = "ttf"
@@ -260,24 +260,20 @@ class CMTextStyle {
 //                font = "Helvetica"
 //            }
         }
+        
+        fontSlant = "Italics"  // "Normal", "Italics", "Oblique"
+        fontWeight = "Normal" // "Lighter", "Normal", "Bold", "Bolder"
+        
         // https://developer.apple.com/library/prerelease/ios/documentation/Carbon/Reference/CTFontRef/index.html
         basefontCT = CTFontCreateWithName(font, fontSize, nil)
-        /*
-        if fontSlant == "Italics" && fontWeight == "Normal" {
-            fontCT = CTFontCreateCopyWithSymbolicTraits(basefontCT!, 0.0, nil, kCTFontSlantTrait, CTFontSymbolicTraits.ItalicTrait)
+        var fontTraits = CTFontGetSymbolicTraits(basefontCT)
+        if fontSlant == "Italics" {
+            fontTraits |= CTFontSymbolicTraits.ItalicTrait
         }
-        else if fontSlant == "Italics" && fontWeight == "Bold" {
-            fontCT = CTFontCreateCopyWithSymbolicTraits(basefontCT!, 0.0, nil, kCTFontSlantTrait, CTFontSymbolicTraits.ItalicTrait | CTFontSymbolicTraits.BoldTrait)
+        if fontWeight == "Bold" {
+            fontTraits |= CTFontSymbolicTraits.BoldTrait
         }
-        else if fontSlant == "Normal" && fontWeight == "Bold" {
-            fontCT = CTFontCreateCopyWithSymbolicTraits(basefontCT!, 0.0, nil, kCTFontWeightTrait, CTFontSymbolicTraits.BoldTrait)
-        }
-        else { // if fontSlant == "Normal" && fontWeight == "Normal"
-            fontCT = basefontCT
-        }
-        */
-        fontCT = basefontCT
-
+        fontCT = CTFontCreateCopyWithSymbolicTraits(basefontCT!, CGFloat(0.0), nil, fontTraits, fontTraits)
         
         
         autoSizeEnabled = true
