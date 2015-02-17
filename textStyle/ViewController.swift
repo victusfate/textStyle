@@ -94,6 +94,7 @@ class CMTextStyle {
         nlines = max(nlines,1)
         
         if nlines == 1 {
+            outWords.append(text)
             return text
         }
         else {
@@ -162,7 +163,7 @@ class CMTextStyle {
         return defaultLineHeight
     }
     
-    func applyParagraphStyle(p : NSMutableAttributedString, mode : NSLineBreakMode) -> NSMutableAttributedString {
+    func applyParagraphStyle(p : NSMutableAttributedString, inText : String, mode : NSLineBreakMode) -> NSMutableAttributedString {
         let sKeyAttributeName : String = (kCTFontAttributeName as NSString) as String
         let sForegroundColorAttributeName : String = (kCTForegroundColorAttributeName as NSString) as String
         let sKerningName : String = (kCTKernAttributeName as NSString) as String
@@ -171,7 +172,7 @@ class CMTextStyle {
             textFont = [ sKeyAttributeName: fontCT!,    sForegroundColorAttributeName: fontColor!, sKerningName: kerning ]
         }
         
-        let attrString1 = NSMutableAttributedString(string: text, attributes: textFont as [NSObject : AnyObject])
+        let attrString1 = NSMutableAttributedString(string: inText, attributes: textFont as [NSObject : AnyObject])
         
         // Define paragraph styling
         let paraStyle = NSMutableParagraphStyle()
@@ -198,12 +199,14 @@ class CMTextStyle {
     }
     
     func setProperties(inText: String, targetFontSize: CGFloat) {
+        maxTextLines = 1
         
         // TBD check memory usage over time
         // http://stackoverflow.com/questions/8491841/memory-usage-grows-with-ctfontcreatewithname-and-ctframesetterref
         
 //        text = naturalWrapText(inText)
         text = inText
+        var lines = text.componentsSeparatedByString("\n")
         
         // case handling
         if capsAll {
@@ -276,7 +279,7 @@ class CMTextStyle {
         fontCT = CTFontCreateCopyWithSymbolicTraits(basefontCT!, CGFloat(0.0), nil, fontTraits, fontTraits)
         
         
-        autoSizeEnabled = true
+        autoSizeEnabled = false
         align = "Center"
         // align = "Left"
         // align = "Right"
@@ -295,7 +298,20 @@ class CMTextStyle {
         kerning = CGFloat(2.0)
         
         para = NSMutableAttributedString()
-        para = applyParagraphStyle(para,mode: NSLineBreakMode.ByWordWrapping)
+        /*
+        var iline = 0, lastLine = lines.count - 1
+        for line in lines {
+            if iline == lastLine {
+                para = applyParagraphStyle(para,inText: line, mode: NSLineBreakMode.ByTruncatingTail)
+            }
+            else {
+                para = applyParagraphStyle(para,inText: line + "\n", mode: NSLineBreakMode.ByClipping)
+            }
+            iline++
+        }
+        */
+//        para = applyParagraphStyle(para,inText: text, mode: NSLineBreakMode.ByTruncatingTail)
+        para = applyParagraphStyle(para,inText: text, mode: NSLineBreakMode.ByWordWrapping)
     }
     
     func setPathBasedOnBaseline(bounds: CGRect) -> CGMutablePath {
@@ -405,30 +421,6 @@ class CMTextStyle {
         }
     }
     
-    
-    func handleMaxTextLines(point : CGPoint) {
-        let bounds = CGRectMake(point.x, point.y, fontBoxWidth, fontBoxHeight)
-        
-        // text rendering time
-        let path = setPathBasedOnBaseline(bounds)
-        let framesetter = CTFramesetterCreateWithAttributedString(para)
-        //        let theSize = getTextSizeFromFrameSetter(framesetter)
-        //        println("the size after creating framesetter \(theSize) boundingBox \(boundingBox)")
-        
-        let frame = CTFramesetterCreateFrame(framesetter,CFRangeMake(0, 0), path, nil)
-        
-        // handle max lines here
-        let lines = CTFrameGetLines(frame) as NSArray
-        let numLines = CFArrayGetCount(lines)
-        if numLines > maxTextLines {
-            para = NSMutableAttributedString()
-            for var iline = 0;iline < maxTextLines - 1;iline++ {
-                // get text for each line textForLine
-                // para = applyParagraphStyle(textForLine,mode: NSLineBreakMode.ByClipping)
-            }
-            // para = applyParagraphStyle(textForLastLine,mode: NSLineBreakMode.ByTruncatingTail)
-        }
-    }
     
     func drawText(point: CGPoint) -> CGImage {
         //        UIGraphicsBeginImageContextWithOptions(CGSizeMake(fontBoxWidth,fontBoxHeight), false, 2.0)
