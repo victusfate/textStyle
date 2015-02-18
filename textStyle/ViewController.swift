@@ -295,6 +295,37 @@ class CMTextStyle {
             useLineHeight = vUseLineHeight as! Bool
         }
         
+        // need a CTFontCreateWithFile(), maybe https://developer.apple.com/library/mac/documentation/Carbon/Reference/CoreText_FontManager_Ref/index.html#//apple_ref/c/func/CTFontManagerIsSupportedFontFile
+        // and a way to use italics if its available if italics is set for slant
+        // and to use weight if its set
+        
+        if count(fontFileBase) > 0 {
+            let fontURL = NSBundle.mainBundle().URLForResource(fontFileBase, withExtension: fontFileExtension)
+            
+            // couldn't find this via swift, checking error instead CTFontManagerIsSupportedFont( fontURL )
+            
+            let descriptors : Array = CTFontManagerCreateFontDescriptorsFromURL(fontURL)! as Array
+            for desc in descriptors {
+                basefontCT = CTFontCreateWithFontDescriptor(desc as! CTFontDescriptor, fontSize, nil)
+                font = CTFontCopyFullName(basefontCT) as! String
+                println("loading font \(font) from file")
+                break;
+            }
+            
+            // alternative method, wasn't error checking properly
+            //            var error : Unmanaged<CFErrorRef>? = nil
+            //            CTFontManagerRegisterFontsForURL(fontURL, CTFontManagerScope.Process, &error)
+            //            if error != nil {
+            ////                assert(false, "error loading font file \(fontFileBase) url \(fontURL), error \(error) ")
+            //                println("error loading font file \(fontFileBase) url \(fontURL), error \(error?.takeRetainedValue())")
+            //                font = "Helvetica"
+            //            }
+        }
+        
+
+        
+        updateTextAndSize(text, targetFontSize: fontSize)
+        
     }
     
     
@@ -443,14 +474,14 @@ class CMTextStyle {
     }
     
     func updateTextAndSize(inText: String, targetFontSize: CGFloat) {
-        maxTextLines = 10
+   
         
         // TBD check memory usage over time
         // http://stackoverflow.com/questions/8491841/memory-usage-grows-with-ctfontcreatewithname-and-ctframesetterref
         
 //        text = naturalWrapText(inText)
         text = inText
-        var lines = text.componentsSeparatedByString("\n")
+//        var lines = text.componentsSeparatedByString("\n")
         
         // case handling
         if capsAll {
@@ -466,50 +497,8 @@ class CMTextStyle {
             text = inText
         }
         
-//        font = "Helvetica"
-//        fontFileBase = ""
-        font = "MuseoSans-900"
-        fontFileBase = "MuseoSans-900"
-//        font = "Georgia Italic"
-//        fontFileBase = "Georgia Italic"
-        fontFileExtension = "ttf"
-        fontBoxWidth = CGFloat(200)
-        fontBoxHeight = CGFloat(200)
+
         fontSize = targetFontSize
-//        fontColorUI = UIColor(red: 1.0, green: 0, blue: 0, alpha: 1.0)
-//        fontColor   = fontColorUI.CGColor
-
-        
-        
-        // need a CTFontCreateWithFile(), maybe https://developer.apple.com/library/mac/documentation/Carbon/Reference/CoreText_FontManager_Ref/index.html#//apple_ref/c/func/CTFontManagerIsSupportedFontFile
-        // and a way to use italics if its available if italics is set for slant
-        // and to use weight if its set
-        
-        if count(fontFileBase) > 0 {
-            let fontURL = NSBundle.mainBundle().URLForResource(fontFileBase, withExtension: fontFileExtension)
-            
-            // couldn't find this via swift, checking error instead CTFontManagerIsSupportedFont( fontURL )
-
-            let descriptors : Array = CTFontManagerCreateFontDescriptorsFromURL(fontURL)! as Array
-            for desc in descriptors {
-                basefontCT = CTFontCreateWithFontDescriptor(desc as! CTFontDescriptor, fontSize, nil)
-                font = CTFontCopyFullName(basefontCT) as! String
-                println("loading font \(font) from file")
-                break;
-            }
-
-            // alternative method, wasn't error checking properly
-//            var error : Unmanaged<CFErrorRef>? = nil
-//            CTFontManagerRegisterFontsForURL(fontURL, CTFontManagerScope.Process, &error)
-//            if error != nil {
-////                assert(false, "error loading font file \(fontFileBase) url \(fontURL), error \(error) ")
-//                println("error loading font file \(fontFileBase) url \(fontURL), error \(error?.takeRetainedValue())")
-//                font = "Helvetica"
-//            }
-        }
-        
-        fontSlant = "Italics"  // "Normal", "Italics", "Oblique"
-        fontWeight = "Normal" // "Lighter", "Normal", "Bold", "Bolder"
         
         // https://developer.apple.com/library/prerelease/ios/documentation/Carbon/Reference/CTFontRef/index.html
         basefontCT = CTFontCreateWithName(font, fontSize, nil)
@@ -521,40 +510,8 @@ class CMTextStyle {
             fontTraits |= CTFontSymbolicTraits.BoldTrait
         }
         fontCT = CTFontCreateCopyWithSymbolicTraits(basefontCT!, CGFloat(0.0), nil, fontTraits, fontTraits)
-        
-        
-        autoSizeEnabled = false
-        align = "Center"
-        // align = "Left"
-        // align = "Right"
-//        baseline = "Top"
-//         baseline = "Bottom"
-        baseline = "Middle"
-        borderPerLine = false
-        borderPadding = 0.0
-        
-        borderLineWidth = CGFloat(4.0)
-        borderColor    = UIColor(red: 0.0, green: 0.0, blue: 1.0, alpha: 1.0).CGColor
-        backgroundColor = UIColor(red: 0.0, green: 1.0, blue: 0.0, alpha: 0.5).CGColor
-        shadowColor = UIColor(red: 0.2, green: 0.2, blue: 0.0, alpha: 1.0).CGColor
-        lineHeight = CGFloat(60)
-        useLineHeight = false
-        kerning = CGFloat(2.0)
-        
+
         para = NSMutableAttributedString()
-        /*
-        var iline = 0, lastLine = lines.count - 1
-        for line in lines {
-            if iline == lastLine {
-                para = applyParagraphStyle(para,inText: line, mode: NSLineBreakMode.ByTruncatingTail)
-            }
-            else {
-                para = applyParagraphStyle(para,inText: line + "\n", mode: NSLineBreakMode.ByClipping)
-            }
-            iline++
-        }
-        */
-//        para = applyParagraphStyle(para,inText: text, mode: NSLineBreakMode.ByTruncatingTail)
         // this updates the computed lineHeight if useLineHeight is false
         para = applyParagraphStyle(para,inText: text, mode: NSLineBreakMode.ByWordWrapping)
     }
@@ -981,9 +938,39 @@ class ViewController: UIViewController {
 
     required init(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
-        textStyle = CMTextStyle(dict: ["fontColor" : "rgba(255,0,0,255)"])
-        textStyle.updateTextAndSize("i am a meat popsicle, NO really that is precisely what I am", targetFontSize: CGFloat(32))
-//        textStyle.updateTextAndSize("YO", targetFontSize: CGFloat(32))
+        textStyle = CMTextStyle(dict: [
+            "text": "i am a meat popsicle, NO really that is precisely what I am",
+            "fontColor" : "rgba(255,0,0,255)",
+            "fontSize" : 32.0,
+            "maxTextLines" : 10,
+            //        "font" : "Helvetica",
+            //        "fontFileBase" : "",
+            "font" : "MuseoSans-900",
+            "fontFileBase" : "MuseoSans-900",
+            //        "font" : "Georgia Italic",
+            //        "fontFileBase" : "Georgia Italic",
+            "fontFileExtension" : "ttf",
+            "fontBoxWidth" : 200,
+            "fontBoxHeight" : 200,
+            "fontSlant" : "Italics",  // "Normal", "Italics", "Oblique"
+            "fontWeight" : "Normal", // "Lighter", "Normal", "Bold", "Bolder"
+            "autoSizeEnabled" : false,
+            "align" : "Center",
+            // "align" : "Left",
+            // "align" : "Right",
+            // "baseline" : "Top",
+            // "baseline" : "Bottom",
+            "baseline" : "Middle",
+            "borderPerLine" : false,
+            "borderPadding" : 0.0,
+            "borderLineWidth" : 4.0,
+            "borderColor" : "rgba(0,0,255,255)",
+            "backgroundColor" : "rgba(0,255,0,128)",
+            "shadowColor" : "rgba(51,51,0,255)",
+            "lineHeight" : 60.0,
+            "useLineHeight" : false,
+            "kerning" : 2.0
+            ])
     }
     
     override func viewDidLoad() {
