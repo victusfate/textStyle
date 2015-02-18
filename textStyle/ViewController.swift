@@ -160,6 +160,7 @@ class CMTextStyle {
     
     var x = CGFloat(0.0)
     var y = CGFloat(0.0)
+    var yFromTop = CGFloat(0.0)
     
     var para = NSMutableAttributedString()
     
@@ -301,7 +302,7 @@ class CMTextStyle {
             x = CGFloat(vX as! Double)
         }
         if let vY : AnyObject = dict["y"] {
-            y = CGFloat(vY as! Double)
+            yFromTop = CGFloat(vY as! Double)
         }
         
         // need a CTFontCreateWithFile(), maybe https://developer.apple.com/library/mac/documentation/Carbon/Reference/CoreText_FontManager_Ref/index.html#//apple_ref/c/func/CTFontManagerIsSupportedFontFile
@@ -330,8 +331,6 @@ class CMTextStyle {
             //                font = "Helvetica"
             //            }
         }
-        
-
         
         updateTextAndSize(text, targetFontSize: fontSize)
         
@@ -650,7 +649,6 @@ class CMTextStyle {
     
     
     func drawText() -> CGImage {
-        let point = CGPoint(x: x, y: y)
         //        UIGraphicsBeginImageContextWithOptions(CGSizeMake(fontBoxWidth,fontBoxHeight), false, 2.0)
         //        let context = UIGraphicsGetCurrentContext()
         
@@ -783,6 +781,10 @@ class CMTextStyle {
         let fullRectangle = CGRectMake(CGFloat(0),CGFloat(0),CGFloat(fullWidth),CGFloat(fullHeight))
         CGContextSetFillColorWithColor(context,UIColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 0.0).CGColor)
         CGContextFillRect(context, fullRectangle)
+        
+        
+        let y = fullHeight - (yFromTop + fontBoxHeight)
+        let point = CGPoint(x: x, y: y)
         
         let bounds = CGRectMake(point.x, point.y, fontBoxWidth, fontBoxHeight)
         
