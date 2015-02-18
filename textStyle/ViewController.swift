@@ -158,6 +158,9 @@ class CMTextStyle {
     var maxTextLines = Int(2)
     var useLineHeight = false
     
+    var x = CGFloat(0.0)
+    var y = CGFloat(0.0)
+    
     var para = NSMutableAttributedString()
     
     init() {
@@ -294,6 +297,12 @@ class CMTextStyle {
         if let vUseLineHeight : AnyObject = dict["useLineHeight"] {
             useLineHeight = vUseLineHeight as! Bool
         }
+        if let vX : AnyObject = dict["x"] {
+            x = CGFloat(vX as! Double)
+        }
+        if let vY : AnyObject = dict["y"] {
+            y = CGFloat(vY as! Double)
+        }
         
         // need a CTFontCreateWithFile(), maybe https://developer.apple.com/library/mac/documentation/Carbon/Reference/CoreText_FontManager_Ref/index.html#//apple_ref/c/func/CTFontManagerIsSupportedFontFile
         // and a way to use italics if its available if italics is set for slant
@@ -328,7 +337,7 @@ class CMTextStyle {
         
     }
     
-    
+    // not currently used
     func naturalWrapText(text : String) -> String
     {
         // space delimit words into array
@@ -640,7 +649,8 @@ class CMTextStyle {
     }
     
     
-    func drawText(point: CGPoint) -> CGImage {
+    func drawText() -> CGImage {
+        let point = CGPoint(x: x, y: y)
         //        UIGraphicsBeginImageContextWithOptions(CGSizeMake(fontBoxWidth,fontBoxHeight), false, 2.0)
         //        let context = UIGraphicsGetCurrentContext()
         
@@ -969,7 +979,9 @@ class ViewController: UIViewController {
             "shadowColor" : "rgba(51,51,0,255)",
             "lineHeight" : 60.0,
             "useLineHeight" : false,
-            "kerning" : 2.0
+            "kerning" : 2.0,
+            "x" : 100,
+            "y" : 50
             ])
     }
     
@@ -979,7 +991,7 @@ class ViewController: UIViewController {
         textStyle.fullWidth = self.view.frame.width
         textStyle.fullHeight = self.view.frame.height
         self.view.backgroundColor = UIColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 1.0)
-        let cgImage = textStyle.drawText(CGPointMake(CGFloat(100),CGFloat(50)))
+        let cgImage = textStyle.drawText()
 
         let image = UIImage(CGImage: cgImage)
         let imageView = UIImageView(image: image!)
