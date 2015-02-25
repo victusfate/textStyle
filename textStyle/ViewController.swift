@@ -161,6 +161,10 @@ class CMTextStyle {
     // fractional width height
     var x = CGFloat(0.0)
     var position = "Center"
+    // supported positions:
+    // Center, North, South, East, West,
+    // NorthWest, NorthEast, SouthWest, SouthEast,
+    // FarNorth, FarSouth, FarEast, FarWest
     
     // point widht height
     var xPoint = CGFloat(0.0)
@@ -526,6 +530,8 @@ class CMTextStyle {
             xFraction = 0.5 - (self.widthFraction  / 2.0); // 0.5 represents half of the stage width
         case "East","NorthEast","SouthEast":
             xFraction = 1 - self.widthFraction
+        case "SouthWest", "West", "NorthWest":
+            xFraction = 0
         case "FarWest":
             xFraction = 0 - self.widthFraction
         case "FarEast":
@@ -539,16 +545,19 @@ class CMTextStyle {
         case "FarWest","West","Center","East","FarEast":
             yFraction = 0.5 - (self.heightFraction / 2.0); // 0.5 represents half of the stage height
         case "South","SouthWest","SouthEast":
+            yFraction = 0
+        case "North":
             yFraction = 1 - self.heightFraction
         case "FarNorth":
-            yFraction = 0 - self.heightFraction
-        case "FarSouth":
             yFraction = 1
+        case "FarSouth":
+            yFraction = 0 - self.heightFraction
         default:
             yFraction = 0.5 - (self.heightFraction / 2.0); // 0.5 represents half of the stage height
         }
-        println("position \(self.position) original width \(self.widthFraction) height \(self.heightFraction) xFraction \(xFraction) yFraction \(yFraction)")
+        //        println("position \(self.position) original width \(self.widthFraction) height \(self.heightFraction) xFraction \(xFraction) yFraction \(yFraction)")
         xFinalPoint += xFraction * self.fullWidth
+        //        yFinalPoint += (1.0 - yFraction) * self.fullHeight
         yFinalPoint += yFraction * self.fullHeight
         
         return CGPoint(x: xFinalPoint, y: yFinalPoint)
@@ -609,7 +618,7 @@ class CMTextStyle {
             //                pad = ""
             //                lineBreakMode = NSLineBreakMode.ByWordWrapping
             //            }
-            println("iline \(iline) line \(line)")
+            //            println("iline \(iline) line \(line)")
             self.para = applyParagraphStyle(self.para, inText: line + pad, mode: lineBreakMode)
         }
         self.nlines = count(lines)
@@ -765,11 +774,12 @@ class CMTextStyle {
         
         //        let yPoint = self.fullHeight - (self.yFromTopPoint + self.fontBoxHeight)
         var point = getFinalOffsets(self.xPoint,yPointIn: self.yFromTopPoint)
+        //        point.y = self.fullHeight - (point.y + self.fontBoxHeight)
         println("final offset point into full width/height \(point)")
         
         // debug show fontbox
-        CGContextSetFillColorWithColor(context,UIColor(red: 0.0, green: 1.0, blue: 1.0, alpha: 0.5).CGColor)
-        CGContextFillRect(context, CGRectMake(point.x,point.y,self.fontBoxWidth,self.fontBoxHeight))
+        //        CGContextSetFillColorWithColor(context,UIColor(red: 0.0, green: 1.0, blue: 1.0, alpha: 0.5).CGColor)
+        //        CGContextFillRect(context, CGRectMake(point.x,point.y,self.fontBoxWidth,self.fontBoxHeight))
         
         let bounds = CGRectMake(point.x, point.y, self.fontBoxWidth, self.fontBoxHeight)
         
